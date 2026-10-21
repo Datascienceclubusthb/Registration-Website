@@ -21,4 +21,13 @@ Replace the starter copy and contact email before publishing. The sample date an
 
 ## Production
 
-Set `MONGODB_URI` in the hosting provider's environment settings, deploy the Next.js app, and use HTTPS. The database should be private and accessible only to the app. Existing Docker and standalone Next.js configuration can be used for container deployments.
+### Deploy on Vercel
+
+1. In Vercel, choose **Add New → Project** and import `datascienceclubusthb-club/Registration-Website`.
+2. Leave the detected Next.js framework, root directory, install command, and build command at their defaults. The build command is `npm run build`.
+3. Add `MONGODB_URI` in the project's Environment Variables settings. Add it to every environment where registrations should be accepted (Production, Preview, and/or Development).
+4. Deploy the project. Redeploy after changing environment variables.
+
+Vercel can build and serve the site without `MONGODB_URI`, but registration submissions will return an unavailable message until the variable points to a reachable MongoDB database. Keep the database private and allow its network access from your deployment environment.
+
+Vercel detects the Next.js app automatically, so this repository does not need a `vercel.json` file or custom output directory. The Docker setup is available for self-hosting.
