@@ -1,0 +1,19 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: event-registration-starter-mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - event-registration-starter-network
+
+networks:
+  event-registration-starter-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
