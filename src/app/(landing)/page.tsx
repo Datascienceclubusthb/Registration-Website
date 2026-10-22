@@ -20,7 +20,7 @@ const coordinates = [
 const quests = [
   {
     name: 'Find your people',
-    text: 'Explore seven departments. Choose up to three paths that spark your curiosity.',
+    text: 'Explore seven departments. See what interests you. There is no department assignment at this stage.',
     icon: 'portal',
     item: '01 / EXPLORATION',
   },
@@ -323,7 +323,7 @@ export default function Home() {
                     className="game-button primary small"
                     href={closed ? '#recruitment-clock' : `/register?department=${current.id}`}
                   >
-                    {closed ? 'Recruitment closed' : 'Choose this path'}{' '}
+                    {closed ? 'Recruitment closed' : 'Apply to the club'}{' '}
                     <span aria-hidden="true">→</span>
                   </Link>
                 </div>
@@ -332,8 +332,8 @@ export default function Home() {
           </div>
         </div>
         <p className="world-note">
-          <PixelIcon name="book" /> Can’t choose just one? Rank up to three departments in your
-          application.
+          <PixelIcon name="book" /> Your application is to the club. Any department preference is
+          optional and non-binding.
         </p>
       </section>
 
@@ -399,8 +399,8 @@ export default function Home() {
               'No. Our seven departments welcome different interests: data, software, design, communication, people, events, and partnerships. Curiosity and willingness to learn matter.',
             ],
             [
-              'Can I choose more than one department?',
-              'Yes. You can rank up to three departments in your application, in order of preference. Explore the world above to find your paths.',
+              'Do I have to choose a department?',
+              'No. You may mention one department that interests you, or leave it blank. This is only an expression of interest, not a confirmed placement. The club team will discuss the right fit with you.',
             ],
             [
               'Can I finish my application later?',

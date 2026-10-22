@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import {FormEvent, useEffect, useMemo, useState} from 'react';
+import {FormEvent, useEffect, useState} from 'react';
 import {departments, type DepartmentId} from '@/config/site';
+import {restoreDepartmentPreference} from '@/lib/department-preference';
 import {useRecruitment} from '@/hooks/use-recruitment';
 import {recruitmentClosesAt, recruitmentDeadlineLabel} from '@/lib/recruitment';
 
@@ -34,7 +35,7 @@ const blank: Draft = {
   contribute: '',
   portfolio: '',
 };
-const steps = ['Identity', 'Path', 'Inventory', 'Quest', 'Review'];
+const steps = ['Identity', 'Interest', 'Inventory', 'Quest', 'Review'];
 const skillOptions = [
   'Python',
   'Machine Learning',
@@ -65,7 +66,7 @@ export default function RegisterPage() {
       const saved = localStorage.getItem('dsc-application-draft');
       if (saved) {
         const parsed = JSON.parse(saved) as Partial<Draft>;
-        setDraft({...blank, ...parsed});
+        setDraft({...blank, ...parsed, choices: restoreDepartmentPreference(parsed.choices)});
       }
       const preferred = new URLSearchParams(location.search).get(
         'department'
@@ -82,29 +83,9 @@ export default function RegisterPage() {
       } catch {}
     }
   }, [draft, ready, status]);
-  const selectedDepartments = useMemo(
-    () => draft.choices.map((id) => departments.find((d) => d.id === id)!).filter(Boolean),
-    [draft.choices]
-  );
+  const preferredDepartment = departments.find((department) => department.id === draft.choices[0]);
   function update<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((prev) => ({...prev, [key]: value}));
-  }
-  function toggleChoice(id: DepartmentId) {
-    setDraft((prev) => {
-      if (prev.choices.includes(id))
-        return {...prev, choices: prev.choices.filter((choice) => choice !== id)};
-      if (prev.choices.length >= 3) return prev;
-      return {...prev, choices: [...prev.choices, id]};
-    });
-  }
-  function moveChoice(index: number, delta: number) {
-    setDraft((prev) => {
-      const next = [...prev.choices];
-      const target = index + delta;
-      if (target < 0 || target >= next.length) return prev;
-      [next[index], next[target]] = [next[target], next[index]];
-      return {...prev, choices: next};
-    });
   }
   function validStep() {
     if (step === 0) {
@@ -118,10 +99,6 @@ export default function RegisterPage() {
         setMessage('Complete every required identity field before continuing.');
         return false;
       }
-    }
-    if (step === 1 && !draft.choices.length) {
-      setMessage('Choose at least one department path.');
-      return false;
     }
     if (step === 3 && (!draft.why.trim() || !draft.contribute.trim())) {
       setMessage('Answer both quest questions before continuing.');
@@ -347,61 +324,35 @@ export default function RegisterPage() {
             {step === 1 && (
               <section className="application-page">
                 <div className="page-heading">
-                  <span>CHOOSE YOUR PATH</span>
-                  <p>
-                    Select up to three divisions and arrange them by preference. Click to add or
-                    remove a path.
-                  </p>
+                  <span>WHAT INTERESTS YOU?</span>
+                  <p>You’re applying to the club. You don’t need to choose a department now.</p>
                 </div>
-                <div className="department-grid">
-                  {departments.map((dept) => {
-                    const rank = draft.choices.indexOf(dept.id);
-                    return (
-                      <button
-                        type="button"
-                        key={dept.id}
-                        aria-pressed={rank >= 0}
-                        onClick={() => toggleChoice(dept.id)}
-                        className={`department-slot${rank >= 0 ? ' chosen' : ''}`}
-                      >
-                        <span className="dept-icon">{dept.icon}</span>
-                        <span className="dept-copy">
-                          <b>{dept.name}</b>
-                          <small>{dept.description}</small>
-                        </span>
-                        <span className="rank-gem">{rank >= 0 ? rank + 1 : '+'}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {selectedDepartments.length > 0 && (
-                  <div className="rank-row">
-                    <b>YOUR RANKED HOTBAR</b>
-                    {selectedDepartments.map((dept, index) => (
-                      <div key={dept.id} className="rank-item">
-                        <span>
-                          {index + 1}. {dept.name}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => moveChoice(index, -1)}
-                          aria-label={`Move ${dept.name} up`}
-                        >
-                          ▲
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveChoice(index, 1)}
-                          aria-label={`Move ${dept.name} down`}
-                        >
-                          ▼
-                        </button>
-                      </div>
+                <label className="full-field" htmlFor="department-interest">
+                  DEPARTMENT THAT INTERESTS YOU — OPTIONAL
+                  <select
+                    id="department-interest"
+                    className={field}
+                    aria-describedby="department-interest-help"
+                    value={draft.choices[0] || ''}
+                    onChange={(event) =>
+                      update(
+                        'choices',
+                        event.target.value ? [event.target.value as DepartmentId] : []
+                      )
+                    }
+                  >
+                    <option value="">No preference yet</option>
+                    {departments.map((department) => (
+                      <option key={department.id} value={department.id}>
+                        {department.name}
+                      </option>
                     ))}
-                  </div>
-                )}
-                <p className="form-note">
-                  {draft.choices.length}/3 paths selected • You can apply without prior experience.
+                  </select>
+                </label>
+                <p id="department-interest-help" className="preference-explanation">
+                  This simply helps us understand your interests. It is not a final choice or a
+                  confirmed placement. The club team will discuss the right fit with you. You can
+                  leave this blank and continue.
                 </p>
               </section>
             )}
@@ -517,14 +468,11 @@ export default function RegisterPage() {
                     </button>
                   </div>
                   <div className="review-box">
-                    <b>RANKED PATHS</b>
-                    <ol>
-                      {selectedDepartments.map((d) => (
-                        <li key={d.id}>{d.name}</li>
-                      ))}
-                    </ol>
+                    <b>DEPARTMENT INTEREST · OPTIONAL</b>
+                    <p>{preferredDepartment?.name || 'No preference yet'}</p>
+                    <p className="form-note">An interest only, not a confirmed placement.</p>
                     <button type="button" className="text-game" onClick={() => setStep(1)}>
-                      EDIT PATHS
+                      EDIT INTEREST
                     </button>
                   </div>
                   <div className="review-box">

@@ -1,8 +1,9 @@
 import {NextResponse} from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Submission from '@/models/Submission';
-import {departments, siteConfig} from '@/config/site';
+import {siteConfig} from '@/config/site';
 
+import {parseDepartmentPreference} from '@/lib/department-preference';
 import {isRecruitmentClosed} from '@/lib/recruitment';
 
 export const runtime = 'nodejs';
@@ -36,10 +37,7 @@ export async function POST(request: Request) {
   const university = string(payload.university, 140);
   const major = string(payload.major, 140);
   const year = string(payload.year, 30);
-  const choices = Array.isArray(payload.choices)
-    ? [...new Set(payload.choices.filter((x): x is string => typeof x === 'string'))].slice(0, 3)
-    : [];
-  const validDepartments = new Set<string>(departments.map((d) => d.id));
+  const choices = parseDepartmentPreference(payload.choices);
   const skills = Array.isArray(payload.skills)
     ? payload.skills
         .filter((x): x is string => typeof x === 'string')
@@ -75,9 +73,9 @@ export async function POST(request: Request) {
       {status: 400}
     );
   }
-  if (!choices.length || choices.length > 3 || choices.some((id) => !validDepartments.has(id)))
+  if (choices === null)
     return NextResponse.json(
-      {error: 'Choose between one and three valid department paths.'},
+      {error: 'Indicate at most one valid department of interest, or leave the preference empty.'},
       {status: 400}
     );
   if (!why || !contribute)

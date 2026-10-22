@@ -2230,3 +2230,5 @@ button {
     font-size: 43px;
   }
 }
+
+.preference-explanation { max-width:650px; color:#b0c5be; font-size:14px; line-height:1.8; margin-top:20px; }

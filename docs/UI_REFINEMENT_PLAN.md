@@ -1,16 +1,16 @@
 # DSC refinement plan
 
-Requested direction: keep the Minecraft identity, simplify the interface, and use a more cinematic composition with less decorative UI. Each applicant chooses exactly one department. Keep Next.js, Tailwind, the official logo, the existing deadline, and administration.
+Requested direction: keep the Minecraft identity, simplify the interface, and use a more cinematic composition with less decorative UI. Applicants may optionally indicate one department of interest. This is not a final choice or an assignment. Keep Next.js, Tailwind, the official logo, the existing deadline, and administration.
 
-The user requested a 30-minute pause after planning and before implementation.
+The user requested a 30-minute pause after planning, then explicitly asked to start early. Work resumed on that instruction.
 
-## Task 1 — One department per application
-- [ ] Replace ranked selections with a single accessible choice.
-- [ ] Enforce exactly one valid department in both the API and MongoDB schema.
-- [ ] Restore older browser drafts using their first valid department.
-- [ ] Update applicant-facing copy, admin labels, and documentation; preserve historical submitted records.
-- [ ] Verify replacement selection and rejection of multiple choices without creating production records.
-- Commit: `Require a single department per application`
+## Task 1 — Optional, non-binding department interest
+- [x] Replace ranked selections with an optional single interest and a no-preference option.
+- [x] Accept zero or one valid department of interest in both the API and MongoDB schema.
+- [x] Restore older browser drafts using their first valid department.
+- [x] Update applicant-facing copy, admin labels, and documentation; preserve historical submitted records.
+- [x] Verify replacement selection and rejection of multiple choices without creating production records.
+- Commit: `Make department interest optional and non-binding`
 
 ## Task 2 — Cinematic homepage hero
 - [ ] Replace the floating-island presentation with a wide, grounded Minecraft landscape and restrained lighting.
@@ -32,3 +32,5 @@ The user requested a 30-minute pause after planning and before implementation.
 - [ ] Run the production build and check the staged files exclude credentials.
 - [ ] Record verification results, commit any final fixes, and push the small commits to main.
 - Commit: `Verify the simplified recruitment experience`
+
+Task 1 verification: six isolated tests passed (optional/single interest, malformed and multiple values, legacy draft restoration, API persistence boundary, cutoff, and model validation). TypeScript check passed. No production database was used.
