@@ -27,12 +27,14 @@ The user requested a 30-minute pause after planning, then explicitly asked to st
 - Commit: `Simplify department browsing and registration presentation`
 
 ## Task 4 — Final review and delivery
-- [ ] Check desktop and narrow mobile layouts in Chromium.
-- [ ] Exercise the full form without submitting a real application; verify single selection, restored drafts, the review step, and the deadline.
-- [ ] Run the production build and check the staged files exclude credentials.
-- [ ] Record verification results, commit any final fixes, and push the small commits to main.
+- [x] Check desktop and narrow mobile layouts in Chromium.
+- [x] Exercise the full form without submitting a real application; verify single selection, restored drafts, the review step, and the deadline.
+- [x] Run the production build and check the staged files exclude credentials.
+- [x] Record verification results, commit any final fixes, and push the small commits to main.
 - Commit: `Verify the simplified recruitment experience`
 
 Task 1 verification: six isolated tests passed (optional/single interest, malformed and multiple values, legacy draft restoration, API persistence boundary, cutoff, and model validation). TypeScript check passed. No production database was used.
 
 Task 2 verification: the rendered landscape is a 292 KB static WebP. Desktop (1440px) and mobile (390px) hero checks passed: no horizontal overflow, countdown hydration, and mobile navigation. TypeScript check passed.
+
+Task 3/4 verification: production build and TypeScript passed. Six isolated API/model tests passed. Chromium checked 320, 390, 768, and 1440px layouts without horizontal overflow, keyboard department navigation, mobile menu, complete mocked form submission, optional interest replacement/clearing, no premature submit, browser draft restoration, expired recruitment, and the admin login screen. No real application was submitted. Credentials remain excluded from Git.

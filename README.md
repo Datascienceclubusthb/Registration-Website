@@ -34,3 +34,7 @@ The official DSC logo retains its original artwork and colors. The current inter
 Department interest is optional. New submissions accept zero or one department ID in the existing `choices` field; additional or invalid IDs are rejected. Historical submitted records remain unchanged. Older browser drafts retain their first valid interest. The admin console labels this field as non-binding.
 
 The cinematic hero uses the original scene in `scripts/landscape-scene.js`, rendered once to `public/dsc-landscape.webp`. It does not load Three.js or WebGL for visitors. To regenerate, install `three` and `playwright` in a separate tools directory, then run `node scripts/render-landscape.cjs /path/to/tools/node_modules`. Chromium is expected at `/usr/bin/chromium`, or set `CHROMIUM_PATH`. The Space Grotesk display font is self-hosted with its OFL license.
+
+## UI verification
+
+Run `node --test tests/registration-preference.test.cjs` for isolated preference/API/model checks. For browser verification, start the app on port 3100, install Playwright in a separate tools directory, and run `node scripts/verify-ui.cjs /absolute/path/to/tools/node_modules`. The script uses Chromium, mocks every registration request, fixes the test clock, and saves screenshots in `/tmp`. It checks responsive layouts, keyboard navigation, registration, draft restoration, the deadline, and admin sign-in presentation. It never submits a real application.
