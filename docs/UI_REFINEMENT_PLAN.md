@@ -13,10 +13,10 @@ The user requested a 30-minute pause after planning, then explicitly asked to st
 - Commit: `Make department interest optional and non-binding`
 
 ## Task 2 — Cinematic homepage hero
-- [ ] Replace the floating-island presentation with a wide, grounded Minecraft landscape and restrained lighting.
-- [ ] Simplify navigation, title, copy, and calls to action.
-- [ ] Integrate the existing October 31 deadline in a discreet, readable countdown.
-- [ ] Keep branding legible, handle small screens, and respect reduced-motion preferences.
+- [x] Replace the floating-island presentation with a wide, grounded Minecraft landscape and restrained lighting.
+- [x] Simplify navigation, title, copy, and calls to action.
+- [x] Integrate the existing October 31 deadline in a discreet, readable countdown.
+- [x] Keep branding legible, handle small screens, and respect reduced-motion preferences.
 - Commit: `Introduce a restrained cinematic recruitment hero`
 
 ## Task 3 — Simplify the rest of the experience
@@ -34,3 +34,5 @@ The user requested a 30-minute pause after planning, then explicitly asked to st
 - Commit: `Verify the simplified recruitment experience`
 
 Task 1 verification: six isolated tests passed (optional/single interest, malformed and multiple values, legacy draft restoration, API persistence boundary, cutoff, and model validation). TypeScript check passed. No production database was used.
+
+Task 2 verification: the rendered landscape is a 292 KB static WebP. Desktop (1440px) and mobile (390px) hero checks passed: no horizontal overflow, countdown hydration, and mobile navigation. TypeScript check passed.

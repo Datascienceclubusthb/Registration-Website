@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import {useState, type KeyboardEvent} from 'react';
 import {departments} from '@/config/site';
+import {CinematicHero} from '@/components/cinematic-hero';
 import {PixelIcon} from '@/components/pixel-icon';
 import {useRecruitment} from '@/hooks/use-recruitment';
 import {recruitmentClosesAt, recruitmentDeadlineLabel} from '@/lib/recruitment';
@@ -40,8 +41,7 @@ const quests = [
 
 export default function Home() {
   const [selected, setSelected] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const {closed, remaining} = useRecruitment();
+  const {closed} = useRecruitment();
   const current = departments[selected];
   const applyHref = closed ? '#recruitment-clock' : '/register';
   function navigateDepartments(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -62,145 +62,7 @@ export default function Home() {
       <a className="skip-link" href="#hero">
         Skip to content
       </a>
-      <header className="realm-header">
-        <Link href="/" className="brand-lockup" aria-label="Data Science Club home">
-          <img src="/dsc-logo.svg" alt="" width="48" height="48" />
-          <span>
-            DATA SCIENCE CLUB<small>USTHB · RECRUITMENT 2026</small>
-          </span>
-        </Link>
-        <button
-          className="mobile-toggle"
-          aria-expanded={menuOpen}
-          aria-controls="main-navigation"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? 'CLOSE ✕' : 'MENU ☰'}
-        </button>
-        <nav
-          id="main-navigation"
-          className={`realm-nav ${menuOpen ? 'is-open' : ''}`}
-          aria-label="Main navigation"
-        >
-          <a href="#worlds" onClick={() => setMenuOpen(false)}>
-            Explore the world
-          </a>
-          <a href="#how-to-join" onClick={() => setMenuOpen(false)}>
-            Your quest
-          </a>
-          <a href="#faq" onClick={() => setMenuOpen(false)}>
-            FAQ
-          </a>
-          <Link
-            href={applyHref}
-            onClick={() => setMenuOpen(false)}
-            className="game-button small primary"
-          >
-            {closed ? 'Applications closed' : 'Join the club'} <span aria-hidden="true">↗</span>
-          </Link>
-        </nav>
-      </header>
-
-      <section className="adventure-hero" id="hero" aria-labelledby="hero-title">
-        <div className="sky-pixels" aria-hidden="true">
-          <span className="pixel-cloud cloud-one" />
-          <span className="pixel-cloud cloud-two" />
-          <span className="square-moon" />
-          <span className="star star-one" />
-          <span className="star star-two" />
-        </div>
-        <div className="hero-inner">
-          <div className="hero-copy">
-            <span className={`realm-status ${closed ? 'is-closed' : ''}`}>
-              <i />
-              {closed ? 'RECRUITMENT CLOSED' : 'A NEW WORLD IS OPEN'}
-            </span>
-            <p className="hero-kicker">DATA SCIENCE CLUB / USTHB</p>
-            <h1 id="hero-title">
-              Every great world
-              <br />
-              starts with <em>you.</em>
-            </h1>
-            <p className="hero-description">
-              A little curiosity. A few good teammates. A whole world of possibilities. Find your
-              place in the Data Science Club and build something that matters.
-            </p>
-            <div className="hero-actions">
-              <Link href={applyHref} className="game-button primary">
-                <PixelIcon name="pickaxe" />
-                {closed ? 'Applications closed' : 'Start your adventure'}
-                <span aria-hidden="true">→</span>
-              </Link>
-              <a className="world-link" href="#worlds">
-                Explore the departments <span aria-hidden="true">↓</span>
-              </a>
-            </div>
-            <div className="hero-perks">
-              <span>
-                <PixelIcon name="diamond" /> All skill levels
-              </span>
-              <span>
-                <PixelIcon name="book" /> No account needed
-              </span>
-            </div>
-          </div>
-          <div className="hero-scene">
-            <img
-              className="island-art"
-              src="/dsc-realm.svg"
-              alt="A block-built DSC island with a redstone lab, village, beacon tower, bridge, and glowing portal"
-              fetchPriority="high"
-              width="1300"
-              height="850"
-            />
-            <div className="world-tag">
-              <span className="world-tag-icon">
-                <PixelIcon name="portal" />
-              </span>
-              <div>
-                <b>DataScience World</b>
-                <span>Survival mode: together.</span>
-              </div>
-              <span className="world-tag-status" aria-hidden="true">
-                ▮▮▮
-              </span>
-            </div>
-            <span className="scene-coordinates">
-              SEED: DSC_2026 &nbsp; / &nbsp; BIOME: POSSIBILITY
-            </span>
-          </div>
-        </div>
-        <div className="deadline-panel" id="recruitment-clock">
-          <div className="deadline-caption">
-            <span className="clock-icon">
-              <PixelIcon name="torch" />
-            </span>
-            <div>
-              <span className="eyebrow">
-                {closed ? 'THE GATES ARE CLOSED' : 'YOUR NEXT CHAPTER IS LOADING'}
-              </span>
-              <h2>{closed ? 'See you on the next adventure.' : 'Don’t miss your spawn point.'}</h2>
-              <p>
-                {closed ? 'This recruitment round has ended.' : 'Applications close'}{' '}
-                <time dateTime={recruitmentClosesAt}>{recruitmentDeadlineLabel}</time>
-              </p>
-            </div>
-          </div>
-          <div
-            className="countdown"
-            role="timer"
-            aria-label={`Time remaining until ${recruitmentDeadlineLabel}`}
-            aria-live="off"
-          >
-            {(['days', 'hours', 'minutes', 'seconds'] as const).map((unit) => (
-              <div className="countdown-unit" key={unit}>
-                <strong>{remaining ? String(remaining[unit]).padStart(2, '0') : '—'}</strong>
-                <span>{unit}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <CinematicHero />
 
       <section className="realm-intro site-container" id="about">
         <div className="intro-mark">
