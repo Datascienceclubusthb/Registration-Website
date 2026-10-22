@@ -38,6 +38,9 @@ export function CinematicHero() {
           className={`cinematic-nav ${menuOpen ? 'is-open' : ''}`}
           aria-label="Main navigation"
         >
+          <a href="#activities" onClick={() => setMenuOpen(false)}>
+            Activities
+          </a>
           <a href="#worlds" onClick={() => setMenuOpen(false)}>
             The departments
           </a>
@@ -69,8 +72,8 @@ export function CinematicHero() {
           <Link href={closed ? '#recruitment-clock' : '/register'} className="editorial-button">
             {closed ? 'Applications closed' : 'Join the club'} <span aria-hidden="true">↗</span>
           </Link>
-          <a href="#worlds">
-            Take a look around <span aria-hidden="true">↓</span>
+          <a href="#activities">
+            Discover what we do <span aria-hidden="true">↓</span>
           </a>
         </div>
       </div>

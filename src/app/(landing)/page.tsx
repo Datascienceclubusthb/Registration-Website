@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import {useState, type KeyboardEvent} from 'react';
 import {departments} from '@/config/site';
+import {ClubActivities} from '@/components/club-activities';
 import {CinematicHero} from '@/components/cinematic-hero';
 import {useRecruitment} from '@/hooks/use-recruitment';
 import {recruitmentDeadlineLabel} from '@/lib/recruitment';
@@ -82,6 +83,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <ClubActivities />
 
       <section
         className="department-section editorial-container"
