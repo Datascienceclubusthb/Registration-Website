@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {FormEvent, useEffect, useState} from 'react';
+import {FormEvent, useEffect, useRef, useState} from 'react';
 import {departments, type DepartmentId} from '@/config/site';
 import {restoreDepartmentPreference} from '@/lib/department-preference';
 import {useRecruitment} from '@/hooks/use-recruitment';
@@ -35,7 +35,7 @@ const blank: Draft = {
   contribute: '',
   portfolio: '',
 };
-const steps = ['Identity', 'Interest', 'Inventory', 'Quest', 'Review'];
+const steps = ['About you', 'Interests', 'Skills', 'Motivation', 'Review'];
 const skillOptions = [
   'Python',
   'Machine Learning',
@@ -59,6 +59,15 @@ export default function RegisterPage() {
   const [draft, setDraft] = useState<Draft>(blank);
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const previousStep = useRef(0);
+  useEffect(() => {
+    if (previousStep.current === step) return;
+    previousStep.current = step;
+    const heading = document.querySelector<HTMLElement>('.page-heading');
+    heading?.focus({preventScroll: true});
+    heading?.scrollIntoView({block: 'start', behavior: 'instant'});
+  }, [step]);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   useEffect(() => {
@@ -80,7 +89,10 @@ export default function RegisterPage() {
     if (ready && status !== 'success') {
       try {
         localStorage.setItem('dsc-application-draft', JSON.stringify(draft));
-      } catch {}
+        setDraftSaved(true);
+      } catch {
+        setDraftSaved(false);
+      }
     }
   }, [draft, ready, status]);
   const preferredDepartment = departments.find((department) => department.id === draft.choices[0]);
@@ -96,12 +108,14 @@ export default function RegisterPage() {
         !draft.major.trim() ||
         !draft.year
       ) {
-        setMessage('Complete every required identity field before continuing.');
+        setMessage(
+          'Complete your name, email, university, major, and academic year before continuing.'
+        );
         return false;
       }
     }
     if (step === 3 && (!draft.why.trim() || !draft.contribute.trim())) {
-      setMessage('Answer both quest questions before continuing.');
+      setMessage('Please answer both questions before continuing.');
       return false;
     }
     if (step === 3 && draft.portfolio) {
@@ -147,17 +161,17 @@ export default function RegisterPage() {
       <main className="registration-screen">
         <div className="max-w-3xl mx-auto px-4 py-12">
           <Link href="/" className="game-back">
-            ← BACK TO WORLD
+            ← Back to the club
           </Link>
           <section className="inventory-panel success-panel">
-            <span className="eyebrow">QUEST COMPLETE</span>
-            <h1>APPLICATION RECEIVED</h1>
+            <span className="eyebrow">DSC RECRUITMENT</span>
+            <h1>Application received</h1>
             <p>
               Your application is now in the DSC review queue. The club team will contact you at{' '}
               <b>{draft.email}</b>.
             </p>
             <Link className="game-button" href="/">
-              RETURN TO MAIN MENU
+              Back to the club
             </Link>
           </section>
         </div>
@@ -168,17 +182,17 @@ export default function RegisterPage() {
       <main className="registration-screen">
         <div className="max-w-3xl mx-auto px-4 py-12">
           <Link href="/" className="game-back">
-            ← BACK TO WORLD
+            ← Back to the club
           </Link>
           <section className="inventory-panel success-panel">
-            <span className="eyebrow">RECRUITMENT CLOSED</span>
-            <h1>THE GATES HAVE CLOSED</h1>
+            <span className="eyebrow">DSC RECRUITMENT</span>
+            <h1>Applications are closed</h1>
             <p>
               This recruitment round ended on {recruitmentDeadlineLabel}. Your saved draft remains
               on this device, but new applications are no longer accepted.
             </p>
             <Link className="game-button primary" href="/">
-              EXPLORE THE CLUB
+              Explore the club
             </Link>
           </section>
         </div>
@@ -186,13 +200,17 @@ export default function RegisterPage() {
     );
   return (
     <main className="registration-screen">
-      <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
+      <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
         <div className="flex items-center justify-between gap-4">
           <Link href="/" className="game-back">
-            ← BACK TO WORLD
+            ← Back to the club
           </Link>
           <span className="save-indicator">
-            {ready ? 'DRAFT SAVED ON THIS DEVICE' : 'LOADING PLAYER DATA'}
+            {ready
+              ? draftSaved
+                ? 'Draft saved on this device'
+                : 'Draft not saved — keep this page open'
+              : 'Loading your draft…'}
           </span>
         </div>
         <div className="registration-deadline">
@@ -200,18 +218,22 @@ export default function RegisterPage() {
           <span>
             {remaining
               ? `${remaining.days}d ${remaining.hours}h ${remaining.minutes}m left to submit`
-              : 'Your adventure awaits'}
+              : 'Submit before the closing date'}
           </span>
         </div>
         <div className="inventory-panel mt-6">
           <div className="inventory-topline">
             <div>
-              <span className="eyebrow">DSC RECRUITMENT • PLAYER MENU</span>
-              <h1>APPLICATION INVENTORY</h1>
+              <span className="eyebrow">DATA SCIENCE CLUB · USTHB</span>
+              <h1>Apply to the club</h1>
             </div>
-            <div className="player-avatar" aria-hidden="true">
-              <span />
-            </div>
+            <img
+              className="application-logo"
+              src="/dsc-logo.svg"
+              alt="Data Science Club"
+              width="50"
+              height="50"
+            />
           </div>
           <div className="step-list" aria-label="Application steps">
             {steps.map((name, index) => (
@@ -222,23 +244,24 @@ export default function RegisterPage() {
                   if (index < step) setStep(index);
                 }}
                 className={`step-tab${index === step ? ' current' : ''}${index < step ? ' complete' : ''}`}
+                disabled={index > step}
                 aria-current={index === step ? 'step' : undefined}
               >
                 <span>{index < step ? '✓' : index + 1}</span>
-                {name.toUpperCase()}
+                {name}
               </button>
             ))}
           </div>
           <form onSubmit={submit}>
             {step === 0 && (
               <section className="application-page">
-                <div className="page-heading">
-                  <span>PLAYER PROFILE</span>
-                  <p>Tell the club who is joining this world.</p>
+                <div className="page-heading" tabIndex={-1}>
+                  <span>Let’s start with you.</span>
+                  <p>A few details so we can get to know you and stay in touch.</p>
                 </div>
                 <div className="form-grid">
                   <label>
-                    FULL NAME *
+                    Full name *
                     <input
                       className={field}
                       value={draft.name}
@@ -250,7 +273,7 @@ export default function RegisterPage() {
                     />
                   </label>
                   <label>
-                    EMAIL ADDRESS *
+                    Email address *
                     <input
                       className={field}
                       type="email"
@@ -263,7 +286,7 @@ export default function RegisterPage() {
                     />
                   </label>
                   <label>
-                    PHONE / WHATSAPP
+                    Phone / WhatsApp (optional)
                     <input
                       className={field}
                       type="tel"
@@ -275,7 +298,7 @@ export default function RegisterPage() {
                     />
                   </label>
                   <label>
-                    UNIVERSITY *
+                    University *
                     <input
                       className={field}
                       value={draft.university}
@@ -285,7 +308,7 @@ export default function RegisterPage() {
                     />
                   </label>
                   <label>
-                    FACULTY / MAJOR *
+                    Faculty / major *
                     <input
                       className={field}
                       value={draft.major}
@@ -296,7 +319,7 @@ export default function RegisterPage() {
                     />
                   </label>
                   <label>
-                    ACADEMIC YEAR *
+                    Academic year *
                     <select
                       className={field}
                       value={draft.year}
@@ -323,12 +346,12 @@ export default function RegisterPage() {
             )}
             {step === 1 && (
               <section className="application-page">
-                <div className="page-heading">
-                  <span>WHAT INTERESTS YOU?</span>
+                <div className="page-heading" tabIndex={-1}>
+                  <span>What interests you?</span>
                   <p>You’re applying to the club. You don’t need to choose a department now.</p>
                 </div>
                 <label className="full-field" htmlFor="department-interest">
-                  DEPARTMENT THAT INTERESTS YOU — OPTIONAL
+                  A department you’re curious about (optional)
                   <select
                     id="department-interest"
                     className={field}
@@ -358,11 +381,10 @@ export default function RegisterPage() {
             )}
             {step === 2 && (
               <section className="application-page">
-                <div className="page-heading">
-                  <span>PACK YOUR INVENTORY</span>
+                <div className="page-heading" tabIndex={-1}>
+                  <span>What do you enjoy?</span>
                   <p>
-                    Pick skills you already have, or want to learn. Every starting inventory is
-                    welcome.
+                    Select skills you have or would like to learn. It’s fine to leave this blank.
                   </p>
                 </div>
                 <div className="skill-grid">
@@ -387,7 +409,7 @@ export default function RegisterPage() {
                   ))}
                 </div>
                 <label className="full-field">
-                  WHAT ARE YOU CURIOUS ABOUT?
+                  Anything else you’re curious about? (optional)
                   <textarea
                     className={field}
                     value={draft.interests}
@@ -397,19 +419,19 @@ export default function RegisterPage() {
                     placeholder="Topics, tools, projects, ideas…"
                   />
                 </label>
-                <p className="form-note">
-                  Optional equipment slot · {draft.skills.length} items equipped
-                </p>
+                <p className="form-note">Optional · {draft.skills.length} skills selected</p>
               </section>
             )}
             {step === 3 && (
               <section className="application-page">
-                <div className="page-heading">
-                  <span>YOUR QUEST</span>
-                  <p>There are no wrong answers. Let us understand what brings you here.</p>
+                <div className="page-heading" tabIndex={-1}>
+                  <span>Tell us a little more.</span>
+                  <p>
+                    A few honest words are enough. We’d like to understand what brings you here.
+                  </p>
                 </div>
                 <label className="full-field">
-                  WHY DO YOU WANT TO JOIN THE DATA SCIENCE CLUB? *
+                  Why do you want to join the Data Science Club? *
                   <textarea
                     className={field}
                     value={draft.why}
@@ -421,7 +443,7 @@ export default function RegisterPage() {
                   />
                 </label>
                 <label className="full-field">
-                  WHAT WOULD YOU LIKE TO CONTRIBUTE OR LEARN? *
+                  What would you like to contribute or learn? *
                   <textarea
                     className={field}
                     value={draft.contribute}
@@ -433,7 +455,7 @@ export default function RegisterPage() {
                   />
                 </label>
                 <label className="full-field">
-                  PORTFOLIO / GITHUB / LINKEDIN{' '}
+                  Portfolio / GitHub / LinkedIn (optional){' '}
                   <input
                     className={field}
                     type="url"
@@ -447,50 +469,67 @@ export default function RegisterPage() {
             )}
             {step === 4 && (
               <section className="application-page">
-                <div className="page-heading">
-                  <span>REVIEW & SUBMIT</span>
-                  <p>Check your player profile and quest before sending it to the club.</p>
+                <div className="page-heading" tabIndex={-1}>
+                  <span>Take one last look.</span>
+                  <p>
+                    Review your details before sending your application to the recruitment team.
+                  </p>
                 </div>
                 <div className="review-grid">
                   <div className="review-box">
-                    <b>PLAYER IDENTITY</b>
+                    <b>About you</b>
                     <p>
                       {draft.name || '—'}
                       <br />
                       {draft.email || '—'}
+                      <br />
+                      {draft.phone || 'No phone provided'}
                       <br />
                       {draft.university} · {draft.major}
                       <br />
                       {draft.year || '—'}
                     </p>
                     <button type="button" className="text-game" onClick={() => setStep(0)}>
-                      EDIT PROFILE
+                      Edit details
                     </button>
                   </div>
                   <div className="review-box">
-                    <b>DEPARTMENT INTEREST · OPTIONAL</b>
+                    <b>Department interest (optional)</b>
                     <p>{preferredDepartment?.name || 'No preference yet'}</p>
                     <p className="form-note">An interest only, not a confirmed placement.</p>
                     <button type="button" className="text-game" onClick={() => setStep(1)}>
-                      EDIT INTEREST
+                      Edit interest
                     </button>
                   </div>
                   <div className="review-box">
-                    <b>INVENTORY</b>
-                    <p>
-                      {draft.skills.length
-                        ? draft.skills.join(' · ')
-                        : 'Curiosity and willingness to learn'}
-                    </p>
+                    <b>Skills & interests</b>
+                    <p>{draft.skills.length ? draft.skills.join(' · ') : 'No skills selected'}</p>
+                    {draft.interests && <p>{draft.interests}</p>}
                     <button type="button" className="text-game" onClick={() => setStep(2)}>
-                      EDIT INVENTORY
+                      Edit skills
                     </button>
                   </div>
                   <div className="review-box">
-                    <b>QUEST</b>
-                    <p>{draft.why || '—'}</p>
+                    <b>Your motivation</b>
+                    <p>
+                      <strong>Why DSC</strong>
+                      <br />
+                      {draft.why || '—'}
+                    </p>
+                    <p>
+                      <strong>What you’d like to contribute or learn</strong>
+                      <br />
+                      {draft.contribute || '—'}
+                    </p>
+                    {draft.portfolio && (
+                      <p>
+                        <strong>Portfolio</strong>
+                        <br />
+                        {draft.portfolio}
+                      </p>
+                    )}
                     <button type="button" className="text-game" onClick={() => setStep(3)}>
-                      EDIT QUEST
+                      Edit motivation
                     </button>
                   </div>
                 </div>
@@ -511,7 +550,7 @@ export default function RegisterPage() {
                     setStep(step - 1);
                   }}
                 >
-                  ◀ PREVIOUS
+                  ← Back
                 </button>
               ) : (
                 <span className="form-note">Fields marked * are required</span>
@@ -526,7 +565,7 @@ export default function RegisterPage() {
                     next();
                   }}
                 >
-                  NEXT <span>▶</span>
+                  Continue →
                 </button>
               ) : (
                 <button
@@ -535,7 +574,7 @@ export default function RegisterPage() {
                   className="game-button submit-game"
                   disabled={status === 'sending' || closed}
                 >
-                  {status === 'sending' ? 'SAVING APPLICATION…' : 'SUBMIT APPLICATION'}{' '}
+                  {status === 'sending' ? 'Sending application…' : 'Send application'}{' '}
                   <span>▶</span>
                 </button>
               )}
@@ -543,7 +582,7 @@ export default function RegisterPage() {
           </form>
         </div>
         <p className="registration-footnote">
-          NO ACCOUNT NEEDED · YOUR PROGRESS SAVES ON THIS DEVICE
+          Your details are shared with the club’s recruitment team.
         </p>
       </div>
     </main>

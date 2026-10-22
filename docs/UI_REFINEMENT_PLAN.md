@@ -20,10 +20,10 @@ The user requested a 30-minute pause after planning, then explicitly asked to st
 - Commit: `Introduce a restrained cinematic recruitment hero`
 
 ## Task 3 — Simplify the rest of the experience
-- [ ] Replace busy map controls and repeated decorative panels with a clear department browser.
-- [ ] Reduce jargon, ornamental labels, and oversized pixel treatment.
-- [ ] Bring registration and its confirmation screens into the same quieter visual system.
-- [ ] Retain keyboard navigation, draft restoration, status feedback, and admin functionality.
+- [x] Replace busy map controls and repeated decorative panels with a clear department browser.
+- [x] Reduce jargon, ornamental labels, and oversized pixel treatment.
+- [x] Bring registration and its confirmation screens into the same quieter visual system.
+- [x] Retain keyboard navigation, draft restoration, status feedback, and admin functionality.
 - Commit: `Simplify department browsing and registration presentation`
 
 ## Task 4 — Final review and delivery
