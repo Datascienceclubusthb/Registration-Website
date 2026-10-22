@@ -1,33 +1,26 @@
-# Event and Club Registration Starter
+# Data Science Club Recruitment
 
-A reusable registration website for a club, meetup, workshop, conference, or community event. Edit the shared config, connect MongoDB, and run the site.
+A responsive recruitment experience for the Data Science Club at USTHB. The Next.js app uses Tailwind CSS, MongoDB, and Vercel. Applicants explore a Minecraft-inspired world, select and rank up to three departments, complete a five-step application, and receive a saved local draft while they work.
 
-## Quick start
+## Run locally
 
-1. Install Node.js 20 or newer.
-2. Install dependencies with `npm install`.
-3. Copy `.env.example` to `.env.local` and set `MONGODB_URI` to a MongoDB database you control.
-4. Start the site with `npm run dev` and open `http://localhost:3000`.
+1. Install Node.js 20.9 or newer.
+2. Run `npm install`.
+3. Copy `.env.example` to `.env.local` and configure the values below.
+4. Run `npm run dev` and open `http://localhost:3000`.
 
-Registrations are saved in MongoDB in the `submissions` collection. The `/api/register` endpoint returns a setup message until `MONGODB_URI` is configured.
+## Environment variables
 
-## Customize for your organization
+- `MONGODB_URI`: MongoDB connection string. Applications are saved in the `submissions` collection.
+- `ADMIN_EMAIL` and `ADMIN_PASSWORD`: credentials for `/admin`.
+- `ADMIN_SESSION_SECRET`: random secret of at least 32 characters used to sign the HTTP-only admin session cookie. Create one with `openssl rand -base64 48`.
 
-Edit [`src/config/site.ts`](src/config/site.ts). This is the single source for the organization name and short mark, event title and intro, date and location, contact email, accent color, navigation, highlight cards, FAQs, and extra registration questions. The registration form always asks for a name and email; phone and any configured extra questions are optional unless marked required.
+Applications can be previewed and filtered by status, division, year, or search in the admin console. Admins can update review status and internal notes or export the filtered results to CSV. The admin console requires all three admin environment variables; keep them private and do not commit `.env.local`.
 
-Extra registration fields support `text` and `textarea` types. Use a unique `name` made of letters, numbers, or underscores, and set a clear label. Their answers are stored with each submission.
+## Deploy to Vercel
 
-Replace the starter copy and contact email before publishing. The sample date and venue are intentionally labeled as placeholders.
+Import `datascienceclubusthb-club/Registration-Website` as a Next.js project and keep the default build settings. Add `MONGODB_URI`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` to the Vercel project environment variables, then deploy. Configure MongoDB network access for your deployment. Registration returns a service-unavailable message if the database is not configured or reachable.
 
-## Production
+## Rebuilt functionality and source limits
 
-### Deploy on Vercel
-
-1. In Vercel, choose **Add New → Project** and import `datascienceclubusthb-club/Registration-Website`.
-2. Leave the detected Next.js framework, root directory, install command, and build command at their defaults. The build command is `npm run build`.
-3. Add `MONGODB_URI` in the project's Environment Variables settings. Add it to every environment where registrations should be accepted (Production, Preview, and/or Development).
-4. Deploy the project. Redeploy after changing environment variables.
-
-Vercel can build and serve the site without `MONGODB_URI`, but registration submissions will return an unavailable message until the variable points to a reachable MongoDB database. Keep the database private and allow its network access from your deployment environment.
-
-Vercel detects the Next.js app automatically, so this repository does not need a `vercel.json` file or custom output directory. The Docker setup is available for self-hosting.
+The supplied Base44 material is a browser-saved site capture rather than the original source project or a connected database. It informed the seven department descriptions and the application/review workflow. Its original admin credentials, existing application data, and backend logic were not included, so the `/admin` dashboard, authentication, application storage, review statuses, filters, and CSV export are implemented here. No Base44 records are migrated.
