@@ -90,6 +90,11 @@ export default function RegisterPage() {
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState(false);
+  const draftStatus = !ready
+    ? 'Loading draft…'
+    : saved
+      ? 'Draft saved on this device'
+      : 'Draft unavailable — keep this page open';
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [consent, setConsent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -401,13 +406,7 @@ export default function RegisterPage() {
         <div className="application-form-shell">
           <div className="application-progress-head">
             <span>APPLICATION / 0{step + 1} OF 05</span>
-            <span role="status">
-              {ready
-                ? saved
-                  ? 'Draft saved on this device'
-                  : 'Draft unavailable — keep this page open'
-                : 'Loading draft…'}
-            </span>
+            <span role="status">{draftStatus}</span>
           </div>
           <nav className="application-progress" aria-label="Application steps">
             {stages.map((name, i) => (
@@ -745,7 +744,7 @@ export default function RegisterPage() {
             </fieldset>
           </form>
           <p className="application-local-note">
-            Your draft is stored in this browser.{' '}
+            {draftStatus}{' '}
             <button
               type="button"
               disabled={sending}
