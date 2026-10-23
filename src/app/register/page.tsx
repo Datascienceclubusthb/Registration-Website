@@ -8,6 +8,7 @@ import {recruitmentDeadlineLabel} from '@/lib/recruitment';
 import {VoxelIsland, WorldBrand, WorldButton} from '@/components/world-ui';
 type Draft = {
   name: string;
+  studentId: string;
   email: string;
   phone: string;
   university: string;
@@ -25,6 +26,7 @@ type Draft = {
 };
 const blank: Draft = {
   name: '',
+  studentId: '',
   email: '',
   phone: '',
   university: 'USTHB',
@@ -83,7 +85,7 @@ const years = [
 ];
 const draftKey = 'dsc-application-draft';
 export default function RegisterPage() {
-  const {closed, expired, checking, unavailable} = useRecruitment();
+  const {closed, expired, unavailable} = useRecruitment();
   const [draft, setDraft] = useState<Draft>(blank);
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
@@ -148,6 +150,8 @@ export default function RegisterPage() {
   function validate(s: number) {
     const e: Record<string, string> = {};
     if (s === 0) {
+      if (!draft.studentId.trim() || draft.studentId.trim().length > 40)
+        e.studentId = 'Enter your student ID / matricule (up to 40 characters).';
       if (draft.name.trim().length < 2) e.name = 'Enter your full name (at least 2 characters).';
       if (!/^\S+@\S+\.\S+$/.test(draft.email)) e.email = 'Enter a valid email address.';
       if (!draft.university.trim()) e.university = 'Enter your university.';
@@ -191,7 +195,7 @@ export default function RegisterPage() {
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (step !== 4 || locked.current || closed || checking || unavailable || !ready) return;
+    if (step !== 4 || locked.current || closed || !ready) return;
     for (const s of [0, 2, 3]) {
       const e = validate(s);
       if (Object.keys(e).length) {
@@ -202,20 +206,28 @@ export default function RegisterPage() {
     }
     if (!consent) {
       setErrors({consent: 'Please read and agree to the application data notice.'});
+      document.querySelector<HTMLInputElement>('.application-consent input')?.focus();
       return;
     }
     locked.current = true;
     setSending(true);
     setMessage('');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
+        signal: controller.signal,
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({...draft, consent, applicationKey: key.current}),
       });
-      const result = await response.json();
-      if (!response.ok)
-        throw Error(result.error || 'We couldn’t save your application. Please try again.');
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.success !== true)
+        throw Error(
+          typeof result?.error === 'string'
+            ? result.error
+            : 'The server could not confirm your application. Please retry; your answers are preserved.'
+        );
       setReference(result.reference || '');
       setSuccess(true);
       try {
@@ -224,11 +236,14 @@ export default function RegisterPage() {
       } catch {}
     } catch (e) {
       setMessage(
-        e instanceof Error
-          ? e.message
-          : 'Connection interrupted. Your draft is saved; please try again.'
+        controller.signal.aborted
+          ? 'The server took too long to respond. Please retry; your answers are preserved and the same application will not be submitted twice.'
+          : e instanceof Error
+            ? e.message
+            : 'Connection interrupted. Your draft is saved; please try again.'
       );
     } finally {
+      clearTimeout(timeout);
       locked.current = false;
       setSending(false);
     }
@@ -414,8 +429,8 @@ export default function RegisterPage() {
           </nav>
           {unavailable && (
             <p className="form-alert" role="status">
-              We can’t check recruitment status right now. You can prepare your draft; submission
-              will be available when the connection returns.
+              We can’t check recruitment status right now. You can still submit; the server will
+              check availability before saving.
             </p>
           )}
           <form onSubmit={submit} noValidate>
@@ -438,6 +453,12 @@ export default function RegisterPage() {
                     max: 120,
                     autoComplete: 'name',
                     placeholder: 'Your full name',
+                  })}
+                  {input('studentId', 'Student ID / Matricule', {
+                    required: true,
+                    max: 40,
+                    autoComplete: 'off',
+                    placeholder: 'Your student matricule',
                   })}
                   {input('email', 'Email address', {
                     required: true,
@@ -606,7 +627,7 @@ export default function RegisterPage() {
                       [
                         'Identity',
                         0,
-                        `${draft.name}\n${draft.email}\n${draft.phone || 'No phone provided'}\n${draft.university} · ${draft.major}\n${draft.year}`,
+                        `${draft.name}\nMatricule: ${draft.studentId}\n${draft.email}\n${draft.phone || 'No phone provided'}\n${draft.university} · ${draft.major}\n${draft.year}`,
                       ],
                       [
                         'Department preferences',
@@ -715,7 +736,7 @@ export default function RegisterPage() {
                     key="submit"
                     type="submit"
                     className="game-button"
-                    disabled={sending || closed || checking || unavailable}
+                    disabled={sending || closed}
                   >
                     {sending ? 'Submitting…' : 'SUBMIT APPLICATION'} ↗
                   </button>

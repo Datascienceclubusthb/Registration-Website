@@ -6,6 +6,7 @@ const SubmissionSchema = new Schema(
     organization: {type: String, required: true, default: 'Data Science Club'},
     eventName: {type: String, required: true, default: 'DSC Recruitment'},
     name: {type: String, required: true, trim: true, maxlength: 120},
+    studentId: {type: String, trim: true, maxlength: 40},
     email: {type: String, required: true, trim: true, lowercase: true, maxlength: 254, index: true},
     phone: {type: String, trim: true, maxlength: 40},
     university: {type: String, required: true, maxlength: 140},

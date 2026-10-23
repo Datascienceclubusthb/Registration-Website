@@ -39,18 +39,37 @@ async function dbConnect() {
     const opts = {
       bufferCommands: false,
       serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 8000,
+      socketTimeoutMS: 12000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    // Keep one in-flight connection even when an individual HTTP request times out.
+    cached.promise = mongoose
+      .connect(MONGODB_URI, opts)
+      .then((connection) => {
+        cached.conn = connection;
+        return connection;
+      })
+      .catch((error) => {
+        cached.promise = null;
+        throw error;
+      });
   }
 
+  // SRV/TXT DNS lookups can outlast MongoDB's server-selection timeout.
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    cached.conn = await cached.promise;
-  } catch (error) {
-    cached.promise = null;
-    throw error;
+    cached.conn = await Promise.race([
+      cached.promise,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('MongoDB connection timed out. Please retry.')),
+          12000
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
   }
   return cached.conn;
 }

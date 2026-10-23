@@ -21,9 +21,9 @@ export default function Privacy() {
         </p>
         <h2>What you share</h2>
         <p>
-          Your identity and education details, optional contact information, department preferences,
-          skills, experience, links, and motivation answers. Optional fields may be left blank. We
-          record the time of submission and your agreement to this notice.
+          Your identity, student matricule and education details, optional contact information,
+          department preferences, skills, experience, links, and motivation answers. Optional fields
+          may be left blank. We record the time of submission and your agreement to this notice.
         </p>
         <h2>Who can access it</h2>
         <p>

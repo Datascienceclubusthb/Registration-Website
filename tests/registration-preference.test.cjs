@@ -63,6 +63,7 @@ test('restores valid unique ranked preferences from legacy browser drafts', () =
 });
 const valid = {
   name: 'Validation only',
+  studentId: '002026123456',
   email: 'validation@example.org',
   university: 'USTHB',
   major: 'Computer Science',
@@ -133,6 +134,7 @@ test('API persists all preferences, optional answers, consent timestamp and refe
       [[], [first], [third, second, first]]
     );
     assert.equal(saved[0].experience, 'Workshop');
+    assert.equal(saved[0].studentId, '002026123456');
     assert.equal(saved[0].privacyVersion, '2026-10-23');
     assert.ok(saved[0].consentAt instanceof Date);
   }));
@@ -140,6 +142,10 @@ test('API rejects missing consent, invalid key, invalid rankings and malformed l
   withEnv(async () => {
     const {POST, saved} = createRoute();
     for (const payload of [
+      {studentId: undefined},
+      {studentId: 1234},
+      {studentId: ' '},
+      {studentId: 'a'.repeat(41)},
       {consent: false},
       {consent: undefined},
       {applicationKey: 'bad'},
@@ -261,3 +267,43 @@ test('recruitment defaults open, honors admin pause, and never bypasses the dead
     else process.env.MONGODB_URI = old;
   }
 });
+
+test('a stalled DNS connection times out the request but keeps one shared connection attempt', async (t) =>
+  withEnv(async () => {
+    const oldCache = global.mongoose;
+    delete global.mongoose;
+    t.mock.timers.enable({apis: ['setTimeout']});
+    let attempts = 0;
+    let resolve;
+    const connection = {connected: true};
+    const pending = new Promise((done) => {
+      resolve = done;
+    });
+    try {
+      const connect = load('src/lib/mongoose.ts', {
+        mongoose: {
+          __esModule: true,
+          default: {
+            connect: () => {
+              attempts++;
+              return pending;
+            },
+          },
+        },
+      }).default;
+      const first = connect();
+      const rejection = assert.rejects(first, /connection timed out/);
+      t.mock.timers.tick(12001);
+      await rejection;
+      const retry = connect();
+      assert.equal(attempts, 1);
+      resolve(connection);
+      assert.equal(await retry, connection);
+      assert.equal(await connect(), connection);
+      assert.equal(attempts, 1);
+    } finally {
+      t.mock.timers.reset();
+      if (oldCache === undefined) delete global.mongoose;
+      else global.mongoose = oldCache;
+    }
+  }));

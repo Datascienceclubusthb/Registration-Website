@@ -8,6 +8,7 @@ import {recruitmentDeadlineLabel} from '@/lib/recruitment';
 type Application = {
   _id: string;
   name: string;
+  studentId?: string;
   email: string;
   phone?: string;
   university?: string;
@@ -193,6 +194,7 @@ export default function AdminPage() {
   function exportCsv() {
     const columns = [
       'Name',
+      'Student ID / Matricule',
       'Email',
       'Phone',
       'University',
@@ -214,6 +216,7 @@ export default function AdminPage() {
     ];
     const rows = data.submissions.map((a) => [
       a.name,
+      a.studentId,
       a.email,
       a.phone,
       a.university,
@@ -367,7 +370,7 @@ export default function AdminPage() {
           <input
             className="inventory-field"
             aria-label="Search applicants"
-            placeholder="Search name, email, major…"
+            placeholder="Search name, matricule, email…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -479,6 +482,8 @@ export default function AdminPage() {
             </div>
             <div className="admin-detail-grid">
               <div>
+                <b>STUDENT ID / MATRICULE</b>
+                <p>{selected.studentId || 'Not recorded (older application)'}</p>
                 <b>EDUCATION</b>
                 <p>
                   {selected.university || '—'}

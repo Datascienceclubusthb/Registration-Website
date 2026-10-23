@@ -45,6 +45,12 @@ export async function POST(request: Request) {
       {error: 'Invalid application session. Reload and try again.'},
       {status: 400}
     );
+  const studentId = typeof payload.studentId === 'string' ? payload.studentId.trim() : '';
+  if (!studentId || studentId.length > 40)
+    return NextResponse.json(
+      {error: 'Enter your student ID / matricule (up to 40 characters).'},
+      {status: 400}
+    );
   const name = string(payload.name, 120);
   const email = string(payload.email, 254).toLowerCase();
   const phone = string(payload.phone, 40);
@@ -135,6 +141,7 @@ export async function POST(request: Request) {
       organization: siteConfig.organization,
       eventName: siteConfig.eventName,
       name,
+      studentId,
       email,
       phone,
       university,

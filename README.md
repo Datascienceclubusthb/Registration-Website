@@ -44,3 +44,11 @@ The Instagram destination was verified from the club’s existing official websi
 ## UI verification
 
 Run `node --test tests/registration-preference.test.cjs` for isolated preference/API/model checks. For browser verification, start the app on port 3100, install Playwright in a separate tools directory, and run `node scripts/verify-ui.cjs /absolute/path/to/tools/node_modules`. The script uses Chromium, mocks every API request, fixes the test clock, and saves screenshots in `/tmp`. It checks responsive layouts, keyboard navigation, registration, draft restoration, the deadline, admin notes, and recruitment controls. It never submits a real application.
+
+## Submission reliability and student matricule
+
+New applications require a student matricule (text, up to 40 characters, preserving leading zeros). It appears in the review, admin details/search, and CSV export. Existing records without this field remain readable.
+
+A failed public availability check no longer disables submission; the API still enforces the deadline and administrative pause. Submissions have a 20-second browser timeout with retry-safe keys and readable errors for non-JSON responses. MongoDB connections have a 12-second request-level wait limit to handle slow SRV/TXT DNS while retaining one shared in-flight connection attempt.
+
+Verification: 12 isolated tests, mocked browser retry after an availability outage and an HTTP 503 response, production build, and an actual API/Atlas persistence-and-retry test using a temporary collection that was removed afterward. During local verification, system SRV/TXT resolution intermittently timed out; verified DNS seed records were used only in the isolated test process, without changing the app’s environment configuration.

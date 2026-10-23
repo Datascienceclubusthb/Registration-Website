@@ -107,6 +107,7 @@ const assert = require('node:assert/strict');
   await page.locator('#name-error').waitFor();
   assert.equal(await page.locator('#name').getAttribute('aria-invalid'), 'true');
   await page.getByLabel('Full name').fill('UI Test');
+  await page.getByLabel('Student ID / Matricule').fill('002026123456');
   await page.getByLabel('Email address').fill('ui-test@example.org');
   await page.getByLabel('Faculty / Field of Study').fill('Computer Science');
   await page.getByLabel('Academic year').selectOption('3rd year');
@@ -152,6 +153,7 @@ const assert = require('node:assert/strict');
     'design-multimedia',
   ]);
   assert.equal(posts[0].consent, true);
+  assert.equal(posts[0].studentId, '002026123456');
   await page.getByText('DSC-test-reference', {exact: true}).waitFor();
   await page.screenshot({path: '/tmp/dsc-world-success.png', fullPage: true});
   await page.goto('http://localhost:3100/register');
@@ -199,6 +201,55 @@ const assert = require('node:assert/strict');
   assert.equal(enabled, false);
   await page.screenshot({path: '/tmp/dsc-world-admin.png', fullPage: true});
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  const retryContext = await browser.newContext();
+  const attempts = [];
+  await retryContext.route('**/api/**', async (route) => {
+    if (new URL(route.request().url()).pathname === '/api/register') {
+      attempts.push(route.request().postDataJSON());
+      await route.fulfill(
+        attempts.length === 1
+          ? {status: 503, contentType: 'text/html', body: 'Service unavailable'}
+          : {
+              status: 201,
+              contentType: 'application/json',
+              body: JSON.stringify({success: true, reference: 'DSC-retry-test'}),
+            }
+      );
+    } else
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: '{"error":"Temporary status outage"}',
+      });
+  });
+  const retryPage = await retryContext.newPage();
+  await retryPage.clock.install({time: new Date('2026-10-23T12:00:00Z')});
+  await retryPage.addInitScript(() =>
+    localStorage.setItem(
+      'dsc-application-draft',
+      JSON.stringify({
+        name: 'Retry check',
+        studentId: '002026123456',
+        email: 'retry@example.invalid',
+        university: 'USTHB',
+        major: 'Computer Science',
+        year: '3rd year',
+        why: 'Learn together',
+        contribute: 'Projects',
+      })
+    )
+  );
+  await retryPage.goto('http://localhost:3100/register');
+  for (let i = 0; i < 4; i++) await retryPage.getByRole('button', {name: 'Continue'}).click();
+  await retryPage.getByRole('checkbox').check();
+  await retryPage.getByRole('button', {name: 'SUBMIT APPLICATION'}).click();
+  await retryPage.getByRole('alert').filter({hasText: 'The server could not confirm'}).waitFor();
+  await retryPage.getByRole('button', {name: 'SUBMIT APPLICATION'}).click();
+  await retryPage.getByRole('heading', {name: 'ACHIEVEMENT UNLOCKED!'}).waitFor();
+  assert.equal(attempts.length, 2);
+  assert.equal(attempts[0].applicationKey, attempts[1].applicationKey);
+  assert.equal(attempts[1].studentId, '002026123456');
+  await retryContext.close();
   assert.deepEqual(errors, []);
   await browser.close();
   console.log(
