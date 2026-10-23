@@ -870,3 +870,471 @@ body {
     transform: none;
   }
 }
+/* Shared application and administration system */
+.application-world,
+.admin-screen {
+  background: var(--world-bg);
+  color: var(--world-ink);
+  min-height: 100vh;
+}
+.application-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 8%;
+  padding-block: 55px 80px;
+}
+.application-sidebar h2 {
+  font: 400 38px/1.1 var(--world-display);
+  margin: 20px 0;
+}
+.application-sidebar em,
+.world-confirmation em {
+  font-style: normal;
+  color: var(--world-orange);
+}
+.application-sidebar > p:not(.world-kicker) {
+  font-size: 13px;
+  color: #66706d;
+  line-height: 1.8;
+}
+.application-sidebar .voxel-island {
+  margin: 30px 0;
+  max-width: 260px;
+}
+.application-closes {
+  border-top: 1px solid var(--world-line);
+  padding-top: 22px;
+  font-size: 9px !important;
+  line-height: 2 !important;
+}
+.application-closes strong {
+  font-weight: 500;
+  color: var(--world-ink);
+}
+.application-sidebar .world-text-link {
+  font-size: 10px;
+}
+.application-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+.application-progress-head > span:last-child {
+  color: #74786e;
+  text-align: right;
+}
+.application-progress {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin: 22px 0 35px;
+}
+.application-progress button {
+  background: none;
+  border: 0;
+  border-top: 3px solid #deded2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 0;
+  text-align: left;
+  font-size: 10px;
+}
+.application-progress button > span {
+  font-size: 9px;
+}
+.application-progress button[aria-current='step'] {
+  border-color: var(--world-orange);
+  color: #a3440c;
+}
+.application-progress button:disabled {
+  opacity: 0.55;
+}
+.application-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.application-step-heading h1 {
+  font: 400 clamp(30px, 3.1vw, 44px)/1.15 var(--world-display);
+  margin: 16px 0;
+  scroll-margin-top: 25px;
+}
+.application-step-heading p:not(.world-kicker) {
+  font-size: 13px;
+  color: #68706a;
+  max-width: 590px;
+  margin-bottom: 30px;
+}
+.world-field {
+  display: block;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 23px;
+}
+.form-grid .world-field {
+  margin-bottom: 0;
+}
+.application-world .inventory-field,
+.admin-screen .inventory-field {
+  background: #faf9f3;
+  border: 1px solid #c8c9be;
+  color: var(--world-ink);
+  font-size: 14px;
+  min-height: 49px;
+  margin-top: 10px;
+}
+.application-world .inventory-field:focus,
+.admin-screen .inventory-field:focus {
+  outline: 2px solid var(--world-orange);
+  outline-offset: 2px;
+}
+.application-world [aria-invalid='true'] {
+  border-color: #b13716;
+}
+.field-error {
+  display: block;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #a33319;
+  margin-top: 8px;
+}
+.application-world .game-button,
+.admin-action {
+  background: var(--world-orange);
+  color: var(--world-ink);
+  border: 1px solid var(--world-ink);
+  font: 600 12px var(--world-body);
+  min-height: 48px;
+}
+.application-world .game-button.secondary {
+  background: transparent;
+  border-color: #b9bdb0;
+  color: var(--world-ink);
+}
+.application-world .game-button:hover {
+  background: #f9a15e;
+}
+.application-world .skill-grid {
+  margin-bottom: 26px;
+}
+.application-world .skill-slot {
+  background: transparent;
+  border-color: var(--world-line);
+  font-size: 11px;
+  gap: 10px;
+}
+.application-world .skill-slot.selected {
+  background: var(--world-soft);
+  border-color: var(--world-orange);
+}
+.application-world .skill-slot > span {
+  color: #b5510d;
+}
+.preference-notice {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #697165;
+  border-left: 3px solid var(--world-orange);
+  padding-left: 16px;
+  margin-bottom: 25px;
+}
+.ranked-preference {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 15px 0;
+  border-top: 1px solid var(--world-line);
+}
+.ranked-preference > .voxel-island,
+.preference-empty {
+  width: 90px;
+  flex-shrink: 0;
+}
+.preference-empty {
+  height: 90px;
+  background: #e9e8df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 32px var(--world-display);
+  color: #a6a99f;
+}
+.ranked-preference label {
+  flex: 1;
+  min-width: 0;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+.ranked-preference select {
+  font-size: 12px !important;
+  letter-spacing: normal;
+}
+.world-review section {
+  border-top: 1px solid var(--world-line);
+  padding: 22px 0;
+}
+.world-review section > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  align-items: center;
+}
+.world-review h2 {
+  font: 600 14px var(--world-body);
+  margin: 0;
+}
+.world-review button {
+  border: 0;
+  background: none;
+  font-size: 11px;
+  padding: 8px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.world-review p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #535e59;
+  margin-bottom: 0;
+}
+.application-consent {
+  background: #ebe9df;
+  padding: 20px;
+  margin-top: 20px;
+}
+.application-consent label {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  font-size: 12px;
+  line-height: 1.8;
+  cursor: pointer;
+}
+.application-consent input {
+  accent-color: var(--world-orange);
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.application-consent p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #657062;
+}
+.application-consent a {
+  text-decoration: underline;
+}
+.application-local-note {
+  font-size: 10px;
+  color: #747c6b;
+  line-height: 1.8;
+  margin-top: 25px;
+}
+.application-local-note button {
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 8px;
+  color: var(--world-ink);
+}
+.world-confirmation {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 6%;
+  align-items: center;
+  min-height: 75vh;
+  padding-block: 70px;
+}
+.world-confirmation h1 {
+  font: 400 clamp(45px, 6vw, 82px)/1.1 var(--world-display);
+  margin: 24px 0;
+}
+.world-confirmation h2 {
+  font: 500 14px var(--world-body);
+}
+.world-confirmation p {
+  font-size: 13px;
+  color: #657062;
+  line-height: 1.9;
+}
+.world-confirmation .world-actions {
+  margin-top: 28px;
+}
+.application-reference {
+  border-block: 1px solid var(--world-line);
+  padding: 16px 0;
+  font-size: 10px !important;
+  overflow-wrap: anywhere;
+}
+.privacy-notice {
+  max-width: 800px;
+  padding-block: 60px 90px;
+}
+.privacy-notice h1 {
+  font: 400 clamp(35px, 5vw, 58px)/1.15 var(--world-display);
+  margin: 24px 0 35px;
+}
+.privacy-notice h2 {
+  font: 600 18px var(--world-body);
+  margin-top: 35px;
+}
+.privacy-notice p {
+  font-size: 14px;
+  color: #59655c;
+  line-height: 1.9;
+}
+.privacy-notice .world-button {
+  margin-top: 30px;
+}
+.admin-stat,
+.admin-table-wrap,
+.admin-detail,
+.admin-login {
+  background: #faf9f3;
+  border: 1px solid var(--world-line);
+}
+.admin-table th {
+  background: #e9e7dc;
+  color: var(--world-ink);
+}
+.admin-head h1,
+.admin-login h1 {
+  font: 400 32px var(--world-display);
+}
+.admin-action.danger {
+  background: #ead2c6;
+  color: #6b2413;
+  border-color: #a87761;
+}
+.admin-detail b {
+  color: var(--world-ink);
+}
+.admin-recruitment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border: 1px solid var(--world-line);
+  padding: 20px;
+  margin-bottom: 24px;
+  font-size: 12px;
+}
+.admin-recruitment p {
+  font-size: 11px;
+  margin-bottom: 0;
+}
+.applicant-name {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+@media (max-width: 1000px) {
+  .application-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 5%;
+  }
+  .application-sidebar h2 {
+    font-size: 31px;
+  }
+  .application-progress button {
+    font-size: 9px;
+    gap: 5px;
+  }
+  .application-world .skill-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .application-layout {
+    grid-template-columns: 1fr;
+    padding-block: 30px 50px;
+    gap: 25px;
+  }
+  .application-sidebar .voxel-island,
+  .application-sidebar > .world-text-link,
+  .application-sidebar > p:not(.world-kicker):not(.application-closes) {
+    display: none;
+  }
+  .application-sidebar h2 {
+    font-size: 35px;
+    margin: 12px 0;
+  }
+  .application-sidebar h2 br {
+    display: none;
+  }
+  .application-closes {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font-size: 9px !important;
+  }
+  .application-progress-head {
+    font-size: 8px;
+    gap: 15px;
+  }
+  .application-progress {
+    margin: 18px 0 25px;
+  }
+  .application-progress button {
+    flex-direction: column;
+    align-items: start;
+    gap: 8px;
+    font-size: 10px;
+  }
+  .application-step-heading h1 {
+    font-size: 32px;
+  }
+  .application-step-heading p:not(.world-kicker) {
+    font-size: 12px;
+  }
+  .ranked-preference {
+    gap: 12px;
+  }
+  .ranked-preference > .voxel-island,
+  .preference-empty {
+    width: 65px;
+  }
+  .preference-empty {
+    height: 65px;
+  }
+  .ranked-preference select {
+    padding: 12px 8px;
+    font-size: 11px !important;
+  }
+  .world-confirmation {
+    grid-template-columns: 1fr;
+    padding-block: 40px;
+    gap: 25px;
+  }
+  .world-confirmation h1 {
+    font-size: 52px;
+  }
+  .world-confirmation .voxel-island {
+    max-width: 400px;
+    margin: auto;
+  }
+  .application-world .world-header > .world-text-link {
+    font-size: 8px;
+    gap: 0;
+  }
+  .admin-recruitment {
+    align-items: start;
+    flex-direction: column;
+  }
+  .privacy-notice {
+    padding-block: 35px 55px;
+  }
+}

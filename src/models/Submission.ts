@@ -11,7 +11,7 @@ const SubmissionSchema = new Schema(
     university: {type: String, required: true, maxlength: 140},
     major: {type: String, required: true, maxlength: 140},
     year: {type: String, required: true, maxlength: 30, index: true},
-    // Kept as an array for compatibility with historical applications. New entries contain zero or one non-binding interest.
+    // Ranked, non-binding interests. Historical submissions remain compatible.
     choices: {
       type: [String],
       default: [],
@@ -22,6 +22,12 @@ const SubmissionSchema = new Schema(
     why: {type: String, required: true, maxlength: 2500},
     contribute: {type: String, required: true, maxlength: 2500},
     portfolio: {type: String, maxlength: 400},
+    experience: {type: String, maxlength: 2500},
+    learn: {type: String, maxlength: 2500},
+    idea: {type: String, maxlength: 2500},
+    applicationKey: {type: String, unique: true, sparse: true},
+    consentAt: {type: Date},
+    privacyVersion: {type: String},
     status: {
       type: String,
       enum: ['new', 'under_review', 'interview', 'accepted', 'rejected'],

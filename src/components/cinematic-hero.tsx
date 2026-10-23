@@ -5,7 +5,7 @@ import {recruitmentClosesAt, recruitmentDeadlineLabel} from '@/lib/recruitment';
 import {WorldBrand, WorldButton, LocationPin} from './world-ui';
 export function CinematicHero() {
   const [open, setOpen] = useState(false);
-  const {closed, remaining} = useRecruitment();
+  const {closed, remaining, checking, unavailable} = useRecruitment();
   return (
     <>
       <header className="world-header world-container">
@@ -83,12 +83,18 @@ export function CinematicHero() {
       <div className="world-deadline world-container" id="recruitment-clock">
         <div>
           <span className="world-kicker">
-            {closed ? 'THIS CHAPTER IS CLOSED' : 'YOUR NEXT CHAPTER IS CALLING'}
+            {closed
+              ? 'THIS CHAPTER IS CLOSED'
+              : checking || unavailable
+                ? 'YOUR NEXT CHAPTER'
+                : 'YOUR NEXT CHAPTER IS CALLING'}
           </span>
           <p>
             {closed
               ? 'Applications are closed.'
-              : 'Submit your application before the portal closes.'}
+              : checking || unavailable
+                ? 'Check recruitment status before submitting.'
+                : 'Submit your application before the portal closes.'}
           </p>
           <time dateTime={recruitmentClosesAt}>{recruitmentDeadlineLabel}</time>
         </div>

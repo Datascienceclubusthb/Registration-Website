@@ -5,6 +5,7 @@ import {siteConfig} from '@/config/site';
 
 import {parseDepartmentPreference} from '@/lib/department-preference';
 import {isRecruitmentClosed} from '@/lib/recruitment';
+import {getRecruitmentState} from '@/lib/recruitment-settings';
 
 export const runtime = 'nodejs';
 
@@ -31,6 +32,19 @@ export async function POST(request: Request) {
     return NextResponse.json({error: 'Please submit a valid application.'}, {status: 400});
   }
 
+  if (payload.consent !== true)
+    return NextResponse.json(
+      {error: 'Please read and agree to the application data notice.'},
+      {status: 400}
+    );
+  const applicationKey = string(payload.applicationKey, 80);
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(applicationKey)
+  )
+    return NextResponse.json(
+      {error: 'Invalid application session. Reload and try again.'},
+      {status: 400}
+    );
   const name = string(payload.name, 120);
   const email = string(payload.email, 254).toLowerCase();
   const phone = string(payload.phone, 40);
@@ -75,15 +89,26 @@ export async function POST(request: Request) {
   }
   if (choices === null)
     return NextResponse.json(
-      {error: 'Indicate at most one valid department of interest, or leave the preference empty.'},
+      {
+        error:
+          'Rank up to three valid departments without duplicates, or leave your preferences empty.',
+      },
       {status: 400}
     );
   if (!why || !contribute)
     return NextResponse.json(
-      {error: 'Answer both quest questions before submitting.'},
+      {error: 'Tell us why you want to join and how you would like to contribute.'},
       {status: 400}
     );
-  if (portfolio && !/^https?:\/\//i.test(portfolio))
+  let validPortfolio = true;
+  if (portfolio) {
+    try {
+      validPortfolio = ['http:', 'https:'].includes(new URL(portfolio).protocol);
+    } catch {
+      validPortfolio = false;
+    }
+  }
+  if (!validPortfolio)
     return NextResponse.json(
       {error: 'Portfolio links must start with http:// or https://.'},
       {status: 400}
@@ -95,8 +120,16 @@ export async function POST(request: Request) {
       {status: 503}
     );
   try {
+    const recruitment = await getRecruitmentState();
+    if (!recruitment.open)
+      return NextResponse.json({error: 'Recruitment is currently closed.'}, {status: 403});
     await dbConnect();
-    await Submission.create({
+    const existing = await Submission.findOne({applicationKey})
+      .select('_id')
+      .lean<{_id: unknown} | null>();
+    if (existing)
+      return NextResponse.json({success: true, reference: `DSC-${existing._id}`}, {status: 200});
+    const submission = await Submission.create({
       organization: siteConfig.organization,
       eventName: siteConfig.eventName,
       name,
@@ -111,10 +144,24 @@ export async function POST(request: Request) {
       why,
       contribute,
       portfolio,
+      experience: string(payload.experience, 2500),
+      learn: string(payload.learn, 2500),
+      idea: string(payload.idea, 2500),
+      applicationKey,
+      consentAt: new Date(),
+      privacyVersion: '2026-10-23',
       status: 'new',
     });
-    return NextResponse.json({success: true}, {status: 201});
+    return NextResponse.json({success: true, reference: `DSC-${submission._id}`}, {status: 201});
   } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+      const existing = await Submission.findOne({applicationKey})
+        .select('_id')
+        .lean<{_id: unknown} | null>()
+        .catch(() => null);
+      if (existing)
+        return NextResponse.json({success: true, reference: `DSC-${existing._id}`}, {status: 200});
+    }
     console.error(
       'Application submission failed:',
       error instanceof Error ? error.message : 'unknown error'

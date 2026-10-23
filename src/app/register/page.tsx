@@ -1,12 +1,11 @@
 'use client';
-
 import Link from 'next/link';
-import {FormEvent, useEffect, useRef, useState} from 'react';
+import {useState, useEffect, useRef, type FormEvent} from 'react';
 import {departments, type DepartmentId} from '@/config/site';
 import {restoreDepartmentPreference} from '@/lib/department-preference';
 import {useRecruitment} from '@/hooks/use-recruitment';
-import {recruitmentClosesAt, recruitmentDeadlineLabel} from '@/lib/recruitment';
-
+import {recruitmentDeadlineLabel} from '@/lib/recruitment';
+import {VoxelIsland, WorldBrand, WorldButton} from '@/components/world-ui';
 type Draft = {
   name: string;
   email: string;
@@ -17,8 +16,11 @@ type Draft = {
   choices: DepartmentId[];
   skills: string[];
   interests: string;
+  experience: string;
   why: string;
+  learn: string;
   contribute: string;
+  idea: string;
   portfolio: string;
 };
 const blank: Draft = {
@@ -31,12 +33,29 @@ const blank: Draft = {
   choices: [],
   skills: [],
   interests: '',
+  experience: '',
   why: '',
+  learn: '',
   contribute: '',
+  idea: '',
   portfolio: '',
 };
-const steps = ['About you', 'Interests', 'Skills', 'Motivation', 'Review'];
-const skillOptions = [
+const stages = ['Identity', 'Your path', 'Skills', 'Motivation', 'Review'];
+const titles = [
+  'LET’S GET TO KNOW YOU.',
+  'WHERE DO YOU BELONG?',
+  'WHAT SKILLS DO YOU BRING?',
+  'WHAT DRIVES YOU?',
+  'READY TO BEGIN?',
+];
+const descriptions = [
+  'A few details so we can get to know you and stay in touch.',
+  'Rank up to three departments you’re curious about. These are interests, not final placements.',
+  'What you know, what you’ve tried, and what you’d like to explore. Beginners are welcome.',
+  'Your own words are enough. Tell us what brings you here.',
+  'Take one last look. You can edit any section before submitting.',
+];
+const skills = [
   'Python',
   'Machine Learning',
   'Statistics',
@@ -52,538 +71,646 @@ const skillOptions = [
   'Logistics',
   'Public Speaking',
 ];
-const field = 'inventory-field';
-
+const years = [
+  '1st year',
+  '2nd year',
+  '3rd year',
+  '4th year',
+  '5th year',
+  'Master 1',
+  'Master 2',
+  'Alumni',
+];
+const draftKey = 'dsc-application-draft';
 export default function RegisterPage() {
-  const {closed, remaining} = useRecruitment();
+  const {closed, expired, checking, unavailable} = useRecruitment();
   const [draft, setDraft] = useState<Draft>(blank);
   const [step, setStep] = useState(0);
   const [ready, setReady] = useState(false);
-  const [draftSaved, setDraftSaved] = useState(false);
-  const previousStep = useRef(0);
-  useEffect(() => {
-    if (previousStep.current === step) return;
-    previousStep.current = step;
-    const heading = document.querySelector<HTMLElement>('.page-heading');
-    heading?.focus({preventScroll: true});
-    heading?.scrollIntoView({block: 'start', behavior: 'instant'});
-  }, [step]);
-  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [saved, setSaved] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [consent, setConsent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [reference, setReference] = useState('');
   const [message, setMessage] = useState('');
+  const key = useRef('');
+  const locked = useRef(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const prev = useRef(0);
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('dsc-application-draft');
-      if (saved) {
-        const parsed = JSON.parse(saved) as Partial<Draft>;
-        setDraft({...blank, ...parsed, choices: restoreDepartmentPreference(parsed.choices)});
+      const raw = JSON.parse(localStorage.getItem(draftKey) || 'null');
+      if (raw && typeof raw === 'object') {
+        const restored = {...blank};
+        for (const field of Object.keys(blank) as (keyof Draft)[]) {
+          if (field !== 'choices' && field !== 'skills' && typeof raw[field] === 'string')
+            restored[field] = raw[field];
+        }
+        restored.choices = restoreDepartmentPreference(raw.choices);
+        restored.skills = Array.isArray(raw.skills)
+          ? raw.skills.filter((s: unknown) => typeof s === 'string' && skills.includes(s))
+          : [];
+        setDraft(restored);
       }
-      const preferred = new URLSearchParams(location.search).get(
-        'department'
-      ) as DepartmentId | null;
-      if (preferred && departments.some((d) => d.id === preferred))
-        setDraft((prev) => (prev.choices.length ? prev : {...prev, choices: [preferred]}));
-    } catch {}
+      const oldKey = localStorage.getItem('dsc-application-key');
+      key.current = oldKey && /^[0-9a-f-]{36}$/i.test(oldKey) ? oldKey : crypto.randomUUID();
+      localStorage.setItem('dsc-application-key', key.current);
+    } catch {
+      key.current = crypto.randomUUID();
+    }
     setReady(true);
   }, []);
   useEffect(() => {
-    if (ready && status !== 'success') {
+    if (ready && !success)
       try {
-        localStorage.setItem('dsc-application-draft', JSON.stringify(draft));
-        setDraftSaved(true);
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+        setSaved(true);
       } catch {
-        setDraftSaved(false);
+        setSaved(false);
       }
+  }, [draft, ready, success]);
+  useEffect(() => {
+    if (prev.current !== step) {
+      prev.current = step;
+      heading.current?.focus();
+      heading.current?.scrollIntoView({block: 'start', behavior: 'instant'});
     }
-  }, [draft, ready, status]);
-  const preferredDepartment = departments.find((department) => department.id === draft.choices[0]);
-  function update<K extends keyof Draft>(key: K, value: Draft[K]) {
-    setDraft((prev) => ({...prev, [key]: value}));
+  }, [step]);
+  function update<K extends keyof Draft>(field: K, value: Draft[K]) {
+    setDraft((d) => ({...d, [field]: value}));
+    setErrors((e) => ({...e, [field]: ''}));
   }
-  function validStep() {
-    if (step === 0) {
-      if (
-        draft.name.trim().length < 2 ||
-        !/^\S+@\S+\.\S+$/.test(draft.email) ||
-        !draft.university.trim() ||
-        !draft.major.trim() ||
-        !draft.year
-      ) {
-        setMessage(
-          'Complete your name, email, university, major, and academic year before continuing.'
-        );
-        return false;
-      }
+  function validate(s: number) {
+    const e: Record<string, string> = {};
+    if (s === 0) {
+      if (draft.name.trim().length < 2) e.name = 'Enter your full name (at least 2 characters).';
+      if (!/^\S+@\S+\.\S+$/.test(draft.email)) e.email = 'Enter a valid email address.';
+      if (!draft.university.trim()) e.university = 'Enter your university.';
+      if (!draft.major.trim()) e.major = 'Enter your faculty or field of study.';
+      if (!years.includes(draft.year)) e.year = 'Select your academic year.';
     }
-    if (step === 3 && (!draft.why.trim() || !draft.contribute.trim())) {
-      setMessage('Please answer both questions before continuing.');
-      return false;
-    }
-    if (step === 3 && draft.portfolio) {
+    if (s === 2 && draft.portfolio) {
       try {
-        const url = new URL(draft.portfolio);
-        if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+        if (!['https:', 'http:'].includes(new URL(draft.portfolio).protocol)) throw Error();
       } catch {
-        setMessage('Enter a complete portfolio URL beginning with https:// or http://.');
-        return false;
+        e.portfolio = 'Enter a complete http:// or https:// link.';
       }
     }
-    setMessage('');
-    return true;
+    if (s === 3) {
+      if (!draft.why.trim()) e.why = 'Tell us why you would like to join.';
+      if (!draft.contribute.trim()) e.contribute = 'Tell us how you would like to contribute.';
+    }
+    return e;
   }
   function next() {
-    if (validStep()) setStep(Math.min(step + 1, 4));
+    const e = validate(step);
+    setErrors(e);
+    if (Object.keys(e).length) {
+      setTimeout(() => document.getElementById(Object.keys(e)[0])?.focus(), 0);
+      return;
+    }
+    setStep((s) => s + 1);
+    setMessage('');
+  }
+  function preference(index: number, value: string) {
+    const choices = [...draft.choices];
+    if (!value) choices.splice(index, 1);
+    else {
+      const existing = choices.indexOf(value as DepartmentId);
+      if (existing !== -1 && existing !== index) {
+        choices[existing] = choices[index];
+      }
+      choices[index] = value as DepartmentId;
+    }
+    update('choices', choices.filter(Boolean));
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (step !== 4 || closed) return;
-    if (!validStep()) return;
-    setStatus('sending');
+    if (step !== 4 || locked.current || closed || checking || unavailable || !ready) return;
+    for (const s of [0, 2, 3]) {
+      const e = validate(s);
+      if (Object.keys(e).length) {
+        setErrors(e);
+        setStep(s);
+        return;
+      }
+    }
+    if (!consent) {
+      setErrors({consent: 'Please read and agree to the application data notice.'});
+      return;
+    }
+    locked.current = true;
+    setSending(true);
     setMessage('');
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(draft),
+        body: JSON.stringify({...draft, consent, applicationKey: key.current}),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Application could not be saved.');
-      setStatus('success');
+      if (!response.ok)
+        throw Error(result.error || 'We couldn’t save your application. Please try again.');
+      setReference(result.reference || '');
+      setSuccess(true);
       try {
-        localStorage.removeItem('dsc-application-draft');
+        localStorage.removeItem(draftKey);
+        localStorage.removeItem('dsc-application-key');
       } catch {}
-    } catch (error) {
-      setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Application could not be saved.');
+    } catch (e) {
+      setMessage(
+        e instanceof Error
+          ? e.message
+          : 'Connection interrupted. Your draft is saved; please try again.'
+      );
+    } finally {
+      locked.current = false;
+      setSending(false);
     }
   }
-  if (status === 'success')
+  function input(
+    field: Exclude<keyof Draft, 'choices' | 'skills'>,
+    label: string,
+    options: {
+      required?: boolean;
+      type?: string;
+      area?: boolean;
+      placeholder?: string;
+      max?: number;
+      autoComplete?: string;
+    } = {}
+  ) {
+    const props = {
+      id: field,
+      value: draft[field],
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+        update(field, e.target.value),
+      className: 'inventory-field',
+      'aria-invalid': Boolean(errors[field]),
+      'aria-describedby': errors[field] ? `${field}-error` : undefined,
+      required: options.required,
+      maxLength: options.max || 2500,
+      placeholder: options.placeholder,
+      autoComplete: options.autoComplete,
+    };
     return (
-      <main className="registration-screen">
-        <div className="max-w-3xl mx-auto px-4 py-12">
-          <Link href="/" className="game-back">
-            ← Back to the club
-          </Link>
-          <section className="inventory-panel success-panel">
-            <span className="eyebrow">DSC RECRUITMENT</span>
-            <h1>Application received</h1>
-            <p>
-              Your application is now in the DSC review queue. The club team will contact you at{' '}
-              <b>{draft.email}</b>.
-            </p>
-            <Link className="game-button" href="/">
-              Back to the club
-            </Link>
-          </section>
-        </div>
-      </main>
+      <label className="world-field" htmlFor={field}>
+        {label}
+        {options.required ? ' *' : ' (optional)'}
+        {options.area ? (
+          <textarea {...props} rows={4} />
+        ) : (
+          <input {...props} type={options.type || 'text'} />
+        )}{' '}
+        {errors[field] && (
+          <span className="field-error" id={`${field}-error`}>
+            {errors[field]}
+          </span>
+        )}
+      </label>
     );
-  if (closed)
+  }
+  if (success || closed)
     return (
-      <main className="registration-screen">
-        <div className="max-w-3xl mx-auto px-4 py-12">
-          <Link href="/" className="game-back">
-            ← Back to the club
+      <main className="application-world">
+        <header className="world-container world-header">
+          <WorldBrand />
+          <Link href="/" className="world-text-link">
+            BACK TO HOME ↗
           </Link>
-          <section className="inventory-panel success-panel">
-            <span className="eyebrow">DSC RECRUITMENT</span>
-            <h1>Applications are closed</h1>
-            <p>
-              This recruitment round ended on {recruitmentDeadlineLabel}. Your saved draft remains
-              on this device, but new applications are no longer accepted.
+        </header>
+        <section className="world-confirmation world-container">
+          <div>
+            <p className="world-kicker">
+              {success ? 'DSC / FIRST QUEST COMPLETE' : 'DSC / RECRUITMENT UPDATE'}
             </p>
-            <Link className="game-button primary" href="/">
-              Explore the club
-            </Link>
-          </section>
-        </div>
+            <h1>
+              {success ? (
+                <>
+                  ACHIEVEMENT
+                  <br />
+                  <em>UNLOCKED!</em>
+                </>
+              ) : (
+                <>
+                  THIS CHAPTER
+                  <br />
+                  IS <em>CLOSED.</em>
+                </>
+              )}
+            </h1>
+            <h2>{success ? 'YOUR APPLICATION HAS BEEN SUBMITTED.' : 'APPLICATIONS ARE CLOSED.'}</h2>
+            <p>
+              {success
+                ? 'Your first quest is complete. Our team will review your application. Stay tuned for the next chapter.'
+                : expired
+                  ? `This round closed on ${recruitmentDeadlineLabel}. Your saved draft stays on this device.`
+                  : 'Recruitment is currently paused. Your saved draft stays on this device. Please check back later.'}
+            </p>
+            {success && (
+              <p>
+                We’ll contact you at <strong>{draft.email}</strong>. Submission does not mean
+                acceptance.
+              </p>
+            )}
+            {reference && (
+              <p className="application-reference">
+                APPLICATION REFERENCE
+                <br />
+                <strong>{reference}</strong>
+              </p>
+            )}
+            <div className="world-actions">
+              <WorldButton href="/">BACK TO HOME</WorldButton>
+              {success && process.env.NEXT_PUBLIC_DSC_INSTAGRAM_URL && (
+                <a
+                  className="world-text-link"
+                  href={process.env.NEXT_PUBLIC_DSC_INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  FOLLOW US ON INSTAGRAM ↗
+                </a>
+              )}
+            </div>
+          </div>
+          <VoxelIsland
+            index={success ? 8 : 6}
+            label={
+              success
+                ? 'A student discovers a treasure chest on a floating Minecraft island'
+                : 'Two connected Minecraft islands'
+            }
+          />
+        </section>
       </main>
     );
   return (
-    <main className="registration-screen">
-      <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="game-back">
-            ← Back to the club
+    <main className="application-world">
+      <header className="world-container world-header">
+        <WorldBrand />
+        <Link href="/" className="world-text-link">
+          BACK TO THE WORLD ↗
+        </Link>
+      </header>
+      <div className="application-layout world-container">
+        <aside className="application-sidebar">
+          <p className="world-kicker">YOUR FIRST QUEST</p>
+          <h2>
+            CREATE YOUR
+            <br />
+            <em>PLAYER PROFILE.</em>
+          </h2>
+          <p>
+            A little about you.
+            <br />A whole world ahead.
+          </p>
+          <VoxelIsland
+            index={step === 1 ? 4 : step === 4 ? 8 : 7}
+            label="Your application journey in DataScience World"
+          />
+          <p className="application-closes">
+            APPLICATIONS CLOSE
+            <br />
+            <strong>{recruitmentDeadlineLabel}</strong>
+          </p>
+          <Link href="/privacy" className="world-text-link">
+            How we use your information ↗
           </Link>
-          <span className="save-indicator">
-            {ready
-              ? draftSaved
-                ? 'Draft saved on this device'
-                : 'Draft not saved — keep this page open'
-              : 'Loading your draft…'}
-          </span>
-        </div>
-        <div className="registration-deadline">
-          <time dateTime={recruitmentClosesAt}>Closes {recruitmentDeadlineLabel}</time>
-          <span>
-            {remaining
-              ? `${remaining.days}d ${remaining.hours}h ${remaining.minutes}m left to submit`
-              : 'Submit before the closing date'}
-          </span>
-        </div>
-        <div className="inventory-panel mt-6">
-          <div className="inventory-topline">
-            <div>
-              <span className="eyebrow">DATA SCIENCE CLUB · USTHB</span>
-              <h1>Apply to the club</h1>
-            </div>
-            <img
-              className="application-logo"
-              src="/dsc-logo.svg"
-              alt="Data Science Club"
-              width="50"
-              height="50"
-            />
+        </aside>
+        <div className="application-form-shell">
+          <div className="application-progress-head">
+            <span>APPLICATION / 0{step + 1} OF 05</span>
+            <span role="status">
+              {ready
+                ? saved
+                  ? 'Draft saved on this device'
+                  : 'Draft unavailable — keep this page open'
+                : 'Loading draft…'}
+            </span>
           </div>
-          <div className="step-list" aria-label="Application steps">
-            {steps.map((name, index) => (
+          <nav className="application-progress" aria-label="Application steps">
+            {stages.map((name, i) => (
               <button
                 type="button"
                 key={name}
+                disabled={i > step || sending}
                 onClick={() => {
-                  if (index < step) setStep(index);
+                  setStep(i);
+                  setMessage('');
+                  setErrors({});
                 }}
-                className={`step-tab${index === step ? ' current' : ''}${index < step ? ' complete' : ''}`}
-                disabled={index > step}
-                aria-current={index === step ? 'step' : undefined}
+                aria-current={i === step ? 'step' : undefined}
               >
-                <span>{index < step ? '✓' : index + 1}</span>
+                <span>{i < step ? '✓' : `0${i + 1}`}</span>
                 {name}
               </button>
             ))}
-          </div>
-          <form onSubmit={submit}>
-            {step === 0 && (
-              <section className="application-page">
-                <div className="page-heading" tabIndex={-1}>
-                  <span>Let’s start with you.</span>
-                  <p>A few details so we can get to know you and stay in touch.</p>
-                </div>
+          </nav>
+          {unavailable && (
+            <p className="form-alert" role="status">
+              We can’t check recruitment status right now. You can prepare your draft; submission
+              will be available when the connection returns.
+            </p>
+          )}
+          <form onSubmit={submit} noValidate>
+            <fieldset disabled={sending || !ready} className="application-fieldset">
+              <div className="application-step-heading">
+                <p className="world-kicker">
+                  {step === 4
+                    ? 'FINAL CHECKPOINT'
+                    : `STEP 0${step + 1} / ${stages[step].toUpperCase()}`}
+                </p>
+                <h1 ref={heading} tabIndex={-1}>
+                  {titles[step]}
+                </h1>
+                <p>{descriptions[step]}</p>
+              </div>
+              {step === 0 && (
                 <div className="form-grid">
-                  <label>
-                    Full name *
-                    <input
-                      className={field}
-                      value={draft.name}
-                      onChange={(e) => update('name', e.target.value)}
-                      autoComplete="name"
-                      maxLength={120}
-                      required
-                      placeholder="Your full name"
-                    />
-                  </label>
-                  <label>
-                    Email address *
-                    <input
-                      className={field}
-                      type="email"
-                      value={draft.email}
-                      onChange={(e) => update('email', e.target.value)}
-                      autoComplete="email"
-                      required
-                      placeholder="you@example.com"
-                      maxLength={254}
-                    />
-                  </label>
-                  <label>
-                    Phone / WhatsApp (optional)
-                    <input
-                      className={field}
-                      type="tel"
-                      value={draft.phone}
-                      onChange={(e) => update('phone', e.target.value)}
-                      autoComplete="tel"
-                      placeholder="Optional"
-                      maxLength={40}
-                    />
-                  </label>
-                  <label>
-                    University *
-                    <input
-                      className={field}
-                      value={draft.university}
-                      onChange={(e) => update('university', e.target.value)}
-                      required
-                      maxLength={140}
-                    />
-                  </label>
-                  <label>
-                    Faculty / major *
-                    <input
-                      className={field}
-                      value={draft.major}
-                      onChange={(e) => update('major', e.target.value)}
-                      required
-                      maxLength={140}
-                      placeholder="e.g. Computer Science"
-                    />
-                  </label>
-                  <label>
+                  {input('name', 'Full name', {
+                    required: true,
+                    max: 120,
+                    autoComplete: 'name',
+                    placeholder: 'Your full name',
+                  })}
+                  {input('email', 'Email address', {
+                    required: true,
+                    type: 'email',
+                    max: 254,
+                    autoComplete: 'email',
+                    placeholder: 'you@example.com',
+                  })}
+                  {input('phone', 'Phone / WhatsApp', {type: 'tel', max: 40, autoComplete: 'tel'})}
+                  {input('university', 'University', {required: true, max: 140})}
+                  {input('major', 'Faculty / Field of Study', {required: true, max: 140})}
+                  <label className="world-field" htmlFor="year">
                     Academic year *
                     <select
-                      className={field}
+                      id="year"
+                      className="inventory-field"
                       value={draft.year}
                       onChange={(e) => update('year', e.target.value)}
+                      aria-invalid={Boolean(errors.year)}
+                      aria-describedby={errors.year ? 'year-error' : undefined}
                       required
                     >
                       <option value="">Select your year</option>
-                      {[
-                        '1st year',
-                        '2nd year',
-                        '3rd year',
-                        '4th year',
-                        '5th year',
-                        'Master 1',
-                        'Master 2',
-                        'Alumni',
-                      ].map((year) => (
-                        <option key={year}>{year}</option>
+                      {years.map((y) => (
+                        <option key={y}>{y}</option>
                       ))}
                     </select>
+                    {errors.year && (
+                      <span className="field-error" id="year-error">
+                        {errors.year}
+                      </span>
+                    )}
                   </label>
                 </div>
-              </section>
-            )}
-            {step === 1 && (
-              <section className="application-page">
-                <div className="page-heading" tabIndex={-1}>
-                  <span>What interests you?</span>
-                  <p>You’re applying to the club. You don’t need to choose a department now.</p>
+              )}
+              {step === 1 && (
+                <div className="ranked-preferences">
+                  <p className="preference-notice">
+                    Not sure yet? You can leave these blank. The team will discuss the right fit
+                    with you.
+                  </p>
+                  {[0, 1, 2].map((i) => {
+                    const idx = departments.findIndex((d) => d.id === draft.choices[i]);
+                    return (
+                      <div className="ranked-preference" key={i}>
+                        {idx >= 0 ? (
+                          <VoxelIsland index={idx} label="" />
+                        ) : (
+                          <span className="preference-empty" aria-hidden="true">{`0${i + 1}`}</span>
+                        )}
+                        <label htmlFor={`preference-${i}`}>
+                          PREFERENCE 0{i + 1}
+                          <select
+                            id={`preference-${i}`}
+                            className="inventory-field"
+                            disabled={i > draft.choices.length}
+                            value={draft.choices[i] || ''}
+                            onChange={(e) => preference(i, e.target.value)}
+                          >
+                            <option value="">
+                              {i ? 'No additional preference' : 'No preference yet'}
+                            </option>
+                            {departments.map((d) => (
+                              <option
+                                key={d.id}
+                                value={d.id}
+                                disabled={draft.choices.includes(d.id) && draft.choices[i] !== d.id}
+                              >
+                                {d.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    );
+                  })}
+                  <p className="world-note">
+                    Priority 01 is your first interest. To change the order, clear a preference and
+                    choose again. No duplicates, and no final assignment.
+                  </p>
                 </div>
-                <label className="full-field" htmlFor="department-interest">
-                  A department you’re curious about (optional)
-                  <select
-                    id="department-interest"
-                    className={field}
-                    aria-describedby="department-interest-help"
-                    value={draft.choices[0] || ''}
-                    onChange={(event) =>
-                      update(
-                        'choices',
-                        event.target.value ? [event.target.value as DepartmentId] : []
-                      )
-                    }
+              )}
+              {step === 2 && (
+                <>
+                  <div
+                    className="skill-grid"
+                    role="group"
+                    aria-label="Skills you have or want to learn"
                   >
-                    <option value="">No preference yet</option>
-                    {departments.map((department) => (
-                      <option key={department.id} value={department.id}>
-                        {department.name}
-                      </option>
+                    {skills.map((s) => (
+                      <button
+                        type="button"
+                        key={s}
+                        className={`skill-slot ${draft.skills.includes(s) ? 'selected' : ''}`}
+                        aria-pressed={draft.skills.includes(s)}
+                        onClick={() =>
+                          update(
+                            'skills',
+                            draft.skills.includes(s)
+                              ? draft.skills.filter((x) => x !== s)
+                              : [...draft.skills, s]
+                          )
+                        }
+                      >
+                        <span aria-hidden="true">{draft.skills.includes(s) ? '✓' : '+'}</span>
+                        {s}
+                      </button>
                     ))}
-                  </select>
-                </label>
-                <p id="department-interest-help" className="preference-explanation">
-                  This simply helps us understand your interests. It is not a final choice or a
-                  confirmed placement. The club team will discuss the right fit with you. You can
-                  leave this blank and continue.
-                </p>
-              </section>
-            )}
-            {step === 2 && (
-              <section className="application-page">
-                <div className="page-heading" tabIndex={-1}>
-                  <span>What do you enjoy?</span>
-                  <p>
-                    Select skills you have or would like to learn. It’s fine to leave this blank.
-                  </p>
-                </div>
-                <div className="skill-grid">
-                  {skillOptions.map((skill) => (
-                    <button
-                      type="button"
-                      key={skill}
-                      aria-pressed={draft.skills.includes(skill)}
-                      onClick={() =>
-                        update(
-                          'skills',
-                          draft.skills.includes(skill)
-                            ? draft.skills.filter((x) => x !== skill)
-                            : [...draft.skills, skill]
-                        )
-                      }
-                      className={`skill-slot${draft.skills.includes(skill) ? ' selected' : ''}`}
-                    >
-                      <i>{draft.skills.includes(skill) ? '✓' : '+'}</i>
-                      {skill}
-                    </button>
-                  ))}
-                </div>
-                <label className="full-field">
-                  Anything else you’re curious about? (optional)
-                  <textarea
-                    className={field}
-                    value={draft.interests}
-                    onChange={(e) => update('interests', e.target.value)}
-                    maxLength={1500}
-                    rows={4}
-                    placeholder="Topics, tools, projects, ideas…"
-                  />
-                </label>
-                <p className="form-note">Optional · {draft.skills.length} skills selected</p>
-              </section>
-            )}
-            {step === 3 && (
-              <section className="application-page">
-                <div className="page-heading" tabIndex={-1}>
-                  <span>Tell us a little more.</span>
-                  <p>
-                    A few honest words are enough. We’d like to understand what brings you here.
-                  </p>
-                </div>
-                <label className="full-field">
-                  Why do you want to join the Data Science Club? *
-                  <textarea
-                    className={field}
-                    value={draft.why}
-                    onChange={(e) => update('why', e.target.value)}
-                    required
-                    maxLength={2500}
-                    rows={5}
-                    placeholder="Tell us what interests you about DSC…"
-                  />
-                </label>
-                <label className="full-field">
-                  What would you like to contribute or learn? *
-                  <textarea
-                    className={field}
-                    value={draft.contribute}
-                    onChange={(e) => update('contribute', e.target.value)}
-                    required
-                    maxLength={2500}
-                    rows={5}
-                    placeholder="A project, a skill, an idea, or something new…"
-                  />
-                </label>
-                <label className="full-field">
-                  Portfolio / GitHub / LinkedIn (optional){' '}
-                  <input
-                    className={field}
-                    type="url"
-                    value={draft.portfolio}
-                    onChange={(e) => update('portfolio', e.target.value)}
-                    maxLength={400}
-                    placeholder="https:// (optional)"
-                  />
-                </label>
-              </section>
-            )}
-            {step === 4 && (
-              <section className="application-page">
-                <div className="page-heading" tabIndex={-1}>
-                  <span>Take one last look.</span>
-                  <p>
-                    Review your details before sending your application to the recruitment team.
-                  </p>
-                </div>
-                <div className="review-grid">
-                  <div className="review-box">
-                    <b>About you</b>
-                    <p>
-                      {draft.name || '—'}
-                      <br />
-                      {draft.email || '—'}
-                      <br />
-                      {draft.phone || 'No phone provided'}
-                      <br />
-                      {draft.university} · {draft.major}
-                      <br />
-                      {draft.year || '—'}
-                    </p>
-                    <button type="button" className="text-game" onClick={() => setStep(0)}>
-                      Edit details
-                    </button>
                   </div>
-                  <div className="review-box">
-                    <b>Department interest (optional)</b>
-                    <p>{preferredDepartment?.name || 'No preference yet'}</p>
-                    <p className="form-note">An interest only, not a confirmed placement.</p>
-                    <button type="button" className="text-game" onClick={() => setStep(1)}>
-                      Edit interest
-                    </button>
+                  {input('experience', 'Previous experience', {
+                    area: true,
+                    placeholder:
+                      'Projects, clubs, events, hackathons or workshops you’ve been part of. Starting out? That’s welcome too.',
+                  })}
+                  {input('interests', 'Other skills or interests', {area: true, max: 1500})}
+                  {input('portfolio', 'Portfolio / GitHub / LinkedIn', {
+                    type: 'url',
+                    max: 400,
+                    placeholder: 'https://',
+                  })}
+                </>
+              )}
+              {step === 3 && (
+                <>
+                  {input('why', 'Why do you want to join Data Science Club?', {
+                    area: true,
+                    required: true,
+                  })}
+                  {input('learn', 'What do you hope to learn?', {area: true})}
+                  {input('contribute', 'How could you contribute?', {area: true, required: true})}
+                  {input('idea', 'An idea or project you would like to develop', {area: true})}
+                </>
+              )}
+              {step === 4 && (
+                <>
+                  <div className="world-review">
+                    {[
+                      [
+                        'Identity',
+                        0,
+                        `${draft.name}\n${draft.email}\n${draft.phone || 'No phone provided'}\n${draft.university} · ${draft.major}\n${draft.year}`,
+                      ],
+                      [
+                        'Department preferences',
+                        1,
+                        draft.choices.length
+                          ? draft.choices
+                              .map(
+                                (id, i) => `${i + 1}. ${departments.find((d) => d.id === id)?.name}`
+                              )
+                              .join('\n')
+                          : 'No preference yet',
+                      ],
+                      [
+                        'Skills & experience',
+                        2,
+                        `${draft.skills.join(' · ') || 'No skills selected'}\n\nExperience: ${draft.experience || 'Not provided'}\nOther interests: ${draft.interests || 'Not provided'}\nPortfolio: ${draft.portfolio || 'Not provided'}`,
+                      ],
+                      [
+                        'Motivation',
+                        3,
+                        `Why DSC: ${draft.why}\n\nLearning goals: ${draft.learn || 'Not provided'}\n\nContribution: ${draft.contribute}\n\nProject idea: ${draft.idea || 'Not provided'}`,
+                      ],
+                    ].map(([title, s, content]) => (
+                      <section key={title}>
+                        <div>
+                          <h2>{title}</h2>
+                          <button
+                            type="button"
+                            onClick={() => setStep(Number(s))}
+                            aria-label={`Edit ${title}`}
+                          >
+                            Edit ↗
+                          </button>
+                        </div>
+                        <p>{content}</p>
+                      </section>
+                    ))}
                   </div>
-                  <div className="review-box">
-                    <b>Skills & interests</b>
-                    <p>{draft.skills.length ? draft.skills.join(' · ') : 'No skills selected'}</p>
-                    {draft.interests && <p>{draft.interests}</p>}
-                    <button type="button" className="text-game" onClick={() => setStep(2)}>
-                      Edit skills
-                    </button>
-                  </div>
-                  <div className="review-box">
-                    <b>Your motivation</b>
-                    <p>
-                      <strong>Why DSC</strong>
-                      <br />
-                      {draft.why || '—'}
+                  <div className="application-consent">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={consent}
+                        onChange={(e) => {
+                          setConsent(e.target.checked);
+                          setErrors({});
+                        }}
+                        aria-describedby="consent-notice"
+                        aria-invalid={Boolean(errors.consent)}
+                      />
+                      <span>
+                        I agree that Data Science Club may use my application information to review
+                        my candidacy and contact me about recruitment. *
+                      </span>
+                    </label>
+                    <p id="consent-notice">
+                      Read the{' '}
+                      <Link href="/privacy" target="_blank">
+                        application data notice
+                      </Link>
+                      . Your information is accessible to authorized recruitment administrators.
                     </p>
-                    <p>
-                      <strong>What you’d like to contribute or learn</strong>
-                      <br />
-                      {draft.contribute || '—'}
-                    </p>
-                    {draft.portfolio && (
-                      <p>
-                        <strong>Portfolio</strong>
-                        <br />
-                        {draft.portfolio}
+                    {errors.consent && (
+                      <p className="field-error" role="alert">
+                        {errors.consent}
                       </p>
                     )}
-                    <button type="button" className="text-game" onClick={() => setStep(3)}>
-                      Edit motivation
-                    </button>
                   </div>
-                </div>
-              </section>
-            )}
-            {message && (
-              <p role="alert" className="form-alert">
-                {message}
-              </p>
-            )}
-            <div className="form-controls">
-              {step > 0 ? (
-                <button
-                  type="button"
-                  className="game-button secondary"
-                  onClick={() => {
-                    setMessage('');
-                    setStep(step - 1);
-                  }}
-                >
-                  ← Back
-                </button>
-              ) : (
-                <span className="form-note">Fields marked * are required</span>
+                </>
               )}
-              {step < 4 ? (
-                <button
-                  key="next"
-                  type="button"
-                  className="game-button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    next();
-                  }}
-                >
-                  Continue →
-                </button>
-              ) : (
-                <button
-                  key="submit"
-                  type="submit"
-                  className="game-button submit-game"
-                  disabled={status === 'sending' || closed}
-                >
-                  {status === 'sending' ? 'Sending application…' : 'Send application'}{' '}
-                  <span>▶</span>
-                </button>
+              {message && (
+                <p className="form-alert" role="alert">
+                  {message}
+                </p>
               )}
-            </div>
+              <div className="form-controls">
+                {step > 0 ? (
+                  <button
+                    type="button"
+                    className="game-button secondary"
+                    onClick={() => {
+                      setStep((s) => s - 1);
+                      setErrors({});
+                      setMessage('');
+                    }}
+                  >
+                    ← Back
+                  </button>
+                ) : (
+                  <span className="form-note">* Required fields</span>
+                )}
+                {step < 4 ? (
+                  <button
+                    key="continue"
+                    type="button"
+                    className="game-button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      next();
+                    }}
+                  >
+                    Continue →
+                  </button>
+                ) : (
+                  <button
+                    key="submit"
+                    type="submit"
+                    className="game-button"
+                    disabled={sending || closed || checking || unavailable}
+                  >
+                    {sending ? 'Submitting…' : 'SUBMIT APPLICATION'} ↗
+                  </button>
+                )}
+              </div>
+            </fieldset>
           </form>
+          <p className="application-local-note">
+            Your draft is stored in this browser.{' '}
+            <button
+              type="button"
+              disabled={sending}
+              onClick={() => {
+                setDraft(blank);
+                setStep(0);
+                setConsent(false);
+                setErrors({});
+                key.current = crypto.randomUUID();
+                try {
+                  localStorage.setItem('dsc-application-key', key.current);
+                } catch {}
+              }}
+            >
+              Clear my draft
+            </button>
+          </p>
         </div>
-        <p className="registration-footnote">
-          Your details are shared with the club’s recruitment team.
-        </p>
       </div>
     </main>
   );
