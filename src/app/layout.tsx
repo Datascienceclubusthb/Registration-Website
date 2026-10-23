@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
-import type { CSSProperties } from 'react';
+import type {Metadata} from 'next';
 import './globals.css';
-import { siteConfig } from '@/config/site';
+import './campaign.css';
+import {siteConfig} from '@/config/site';
 
 export const metadata: Metadata = {
   title: `${siteConfig.eventName} | ${siteConfig.organization}`,
@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased" style={{ '--accent': siteConfig.primaryColor } as CSSProperties}>{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

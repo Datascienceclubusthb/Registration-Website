@@ -1,269 +1,316 @@
 'use client';
-
 import Link from 'next/link';
 import {useState, type KeyboardEvent} from 'react';
 import {departments} from '@/config/site';
-import {ClubActivities} from '@/components/club-activities';
 import {CinematicHero} from '@/components/cinematic-hero';
-import {useRecruitment} from '@/hooks/use-recruitment';
+import {VoxelIsland, WorldButton, WorldBrand, LocationPin} from '@/components/world-ui';
 import {recruitmentDeadlineLabel} from '@/lib/recruitment';
-
-const projects = [
-  ['Explore real datasets', 'Experiment with machine learning', 'Make data easier to understand'],
-  ['Build useful web applications', 'Collaborate on club tools', 'Learn through shared projects'],
+const responsibilities = [
   [
-    'Tell the stories behind our projects',
-    'Create content for the community',
-    'Help people discover our events',
-  ],
-  ['Create visual identities', 'Design posters and interfaces', 'Explore photography and motion'],
-  [
-    'Welcome and support members',
-    'Listen to the needs of the community',
-    'Help people find their place',
+    'Explore and explain datasets',
+    'Experiment with machine learning',
+    'Share findings with the community',
   ],
   [
-    'Shape workshops and meetups',
-    'Coordinate teams and logistics',
-    'Bring shared ideas into a room',
+    'Build applications and club tools',
+    'Collaborate on code and reviews',
+    'Turn ideas into useful software',
   ],
+  ['Shape campaigns and stories', 'Create community content', 'Help people discover DSC'],
   [
-    'Connect with other communities',
-    'Develop meaningful collaborations',
-    'Build relationships beyond campus',
+    'Design identities and interfaces',
+    'Create posters and multimedia',
+    'Bring ideas to life visually',
   ],
+  ['Welcome and support members', 'Listen to the community', 'Help teams work together'],
+  ['Plan workshops and hackathons', 'Coordinate people and logistics', 'Make events run smoothly'],
+  ['Connect with communities', 'Develop collaborations', 'Build relationships beyond campus'],
 ];
-
 export default function Home() {
   const [selected, setSelected] = useState(0);
-  const {closed} = useRecruitment();
   const current = departments[selected];
-  function navigate(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+  function navigate(e: KeyboardEvent<HTMLButtonElement>, i: number) {
     const keys: Record<string, number> = {
-      ArrowDown: (index + 1) % departments.length,
-      ArrowRight: (index + 1) % departments.length,
-      ArrowUp: (index + departments.length - 1) % departments.length,
-      ArrowLeft: (index + departments.length - 1) % departments.length,
+      ArrowRight: (i + 1) % 7,
+      ArrowDown: (i + 1) % 7,
+      ArrowLeft: (i + 6) % 7,
+      ArrowUp: (i + 6) % 7,
       Home: 0,
-      End: departments.length - 1,
+      End: 6,
     };
-    if (!(event.key in keys)) return;
-    event.preventDefault();
-    setSelected(keys[event.key]);
-    document.getElementById(`department-${keys[event.key]}`)?.focus();
+    if (e.key in keys) {
+      e.preventDefault();
+      setSelected(keys[e.key]);
+      document.getElementById(`department-${keys[e.key]}`)?.focus();
+    }
   }
   return (
-    <main className="refined-home">
+    <main className="datascience-world">
       <a className="skip-link" href="#club">
         Skip to content
       </a>
       <CinematicHero />
-      <section className="club-story" id="club">
-        <div className="editorial-container story-layout">
-          <div>
-            <p className="section-label">THE CLUB</p>
-            <h2>
-              A shared curiosity.
-              <br />
-              Room to grow.
-            </h2>
-          </div>
-          <div>
-            <p className="story-lead">You don’t need to have it all figured out.</p>
-            <p>
-              At the Data Science Club, people with different interests come together to learn and
-              make things. Some write code. Others design, organise, communicate, or connect people.
-            </p>
-            <p>Bring what you know. Discover what you don’t. There’s a place to start.</p>
-            <div className="story-facts">
-              <span>USTHB, Algiers</span>
-              <span>Seven departments</span>
-              <span>All skill levels</span>
-            </div>
-          </div>
+      <section id="club" className="world-about world-container">
+        <div className="world-about-art">
+          <VoxelIsland
+            index={7}
+            label="Students building a structure together on a floating island"
+          />
+          <span className="world-stamp">
+            BUILT TOGETHER.
+            <br />
+            BUILT TO LAST.
+          </span>
+        </div>
+        <div>
+          <p className="world-kicker">02 / THE COMMUNITY</p>
+          <h2>
+            DIFFERENT SKILLS.
+            <br />
+            <em>ONE WORLD.</em>
+          </h2>
+          <p className="world-lead">Great things are built together.</p>
+          <p>
+            Data Science Club is a university community at USTHB, dedicated to technology,
+            innovation, collaboration and learning. Bring your curiosity. There’s room for what
+            makes you, you.
+          </p>
+          <ul className="world-values">
+            <li>
+              <span>01</span>Learn from each other. Grow your technical and people skills.
+            </li>
+            <li>
+              <span>02</span>Build real projects through workshops, hackathons and shared ideas.
+            </li>
+            <li>
+              <span>03</span>Meet people, discover opportunities, and help everyone feel welcome.
+            </li>
+          </ul>
         </div>
       </section>
-
-      <ClubActivities />
-
-      <section
-        className="department-section editorial-container"
-        id="worlds"
-        aria-labelledby="departments-title"
-      >
-        <div className="editorial-section-head">
-          <div>
-            <p className="section-label">THE PEOPLE BEHIND THE CLUB</p>
-            <h2 id="departments-title">
-              Different interests.
-              <br />A shared direction.
-            </h2>
+      <section id="worlds" className="world-departments">
+        <div className="world-container">
+          <div className="world-section-heading">
+            <div>
+              <p className="world-kicker">03 / EXPLORE THE WORLD</p>
+              <h2>
+                CHOOSE YOUR <em>PATH.</em>
+              </h2>
+            </div>
+            <p>
+              Every player has their strengths.
+              <br />
+              Find where yours belong.
+            </p>
           </div>
-          <p>
-            Meet the departments that make DSC.
-            <br />
-            Explore what feels familiar — or try something new.
-          </p>
-        </div>
-        <div className="department-browser">
-          <div
-            className="department-index"
-            role="tablist"
-            aria-label="Departments"
-            aria-orientation="vertical"
-          >
-            {departments.map((department, index) => (
+          <div className="world-selector" role="tablist" aria-label="Departments">
+            {departments.map((d, i) => (
               <button
-                id={`department-${index}`}
-                key={department.id}
                 role="tab"
-                aria-selected={index === selected}
+                key={d.id}
+                id={`department-${i}`}
+                aria-selected={i === selected}
                 aria-controls="department-detail"
-                tabIndex={selected === index ? 0 : -1}
-                onKeyDown={(event) => navigate(event, index)}
-                onClick={() => setSelected(index)}
+                tabIndex={i === selected ? 0 : -1}
+                onKeyDown={(e) => navigate(e, i)}
+                onClick={() => setSelected(i)}
               >
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <b>{department.name}</b>
-                <i aria-hidden="true">↗</i>
+                <span>0{i + 1}</span>
+                {d.name}
               </button>
             ))}
           </div>
-          <article
-            className="department-detail"
+          <div
+            className="world-department-detail"
             id="department-detail"
             role="tabpanel"
             aria-labelledby={`department-${selected}`}
             tabIndex={0}
           >
-            <p className="detail-number">{String(selected + 1).padStart(2, '0')} / 07</p>
-            <h3>{current.name}</h3>
-            <p>{current.description}</p>
-            <h4>What you could explore</h4>
-            <ul>
-              {projects[selected].map((project) => (
-                <li key={project}>{project}</li>
-              ))}
-            </ul>
-            <p className="department-skills">{current.skills.join(' · ')}</p>
-            <Link href="/register" className="department-apply">
-              {closed ? 'View recruitment status' : 'Apply to the club'}{' '}
-              <span aria-hidden="true">↗</span>
-            </Link>
-          </article>
+            <div className="department-island">
+              <VoxelIsland
+                index={selected}
+                label={`${current.name}: ${current.landmark} on a Minecraft floating island`}
+              />
+              <LocationPin number={`0${selected + 1}`} />
+              <span className="island-coordinate">
+                STATION 0{selected + 1} / {current.landmark.toUpperCase()}
+              </span>
+            </div>
+            <div className="department-description">
+              <p className="world-kicker">YOUR NEXT DISCOVERY / 0{selected + 1}</p>
+              <h3>{current.name}</h3>
+              <p>{current.description}</p>
+              <ul>
+                {responsibilities[selected].map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+              <p className="world-skills">{current.skills.join(' / ')}</p>
+              <WorldButton href="/register">EXPLORE YOUR FIT</WorldButton>
+              <p className="world-note">
+                Your preferences help us get to know you. They don’t determine your final
+                department.
+              </p>
+            </div>
+          </div>
+          <div className="world-island-route" aria-label="Explore another department">
+            {departments.map((d, i) => (
+              <button
+                key={d.id}
+                onClick={() => setSelected(i)}
+                aria-pressed={i === selected}
+                aria-label={`Explore ${d.name}`}
+              >
+                <VoxelIsland index={i} label="" />
+                <span>0{i + 1}</span>
+              </button>
+            ))}
+          </div>
         </div>
-        <p className="department-footnote">
-          You’re applying to the club. You can mention one department that interests you, but it’s
-          optional and doesn’t determine your placement.
-        </p>
       </section>
-
-      <section className="joining-section" id="how-to-join">
-        <div className="editorial-container joining-layout">
+      <section id="activities" className="world-activities world-container">
+        <div className="world-section-heading">
           <div>
-            <p className="section-label">GETTING STARTED</p>
+            <p className="world-kicker">04 / MORE THAN MEETINGS</p>
             <h2>
-              Come as you are.
+              LEARN. BUILD.
               <br />
-              Let’s see what’s next.
+              <em>DO IT TOGETHER.</em>
+            </h2>
+          </div>
+          <p>
+            A challenge. A new skill. A first project.
+            <br />
+            Find your reason to join.
+          </p>
+        </div>
+        <div className="world-activity-list">
+          {[
+            [
+              'Data Fest',
+              'THE HACKATHON',
+              'Turn a challenge into your team’s next idea. Explore data, experiment together, and build a solution you can share.',
+              5,
+              'Explore the challenge / Build as a team / Present your solution',
+            ],
+            [
+              'Data Camp',
+              'THE BOOTCAMP',
+              'Learn by doing. Explore data science step by step, ask questions, and build confidence through hands-on practice.',
+              0,
+              'Learn the concepts / Put them into practice / Keep progressing',
+            ],
+            [
+              'Projects',
+              'THE PROJECT SERIES',
+              'Keep the momentum going with a series of collaborative projects. Start with a question and turn what you learn into something real.',
+              1,
+              'Choose an idea / Build and iterate / Share what you made',
+            ],
+          ].map(([name, type, description, index, detail], i) => (
+            <article key={name} className="world-activity">
+              <div className="activity-heading">
+                <span className="world-kicker">
+                  0{i + 1} / {type}
+                </span>
+                <h3>{name}</h3>
+              </div>
+              <VoxelIsland index={Number(index)} label={`${name} Minecraft location`} />
+              <div>
+                <p>{description}</p>
+                <details>
+                  <summary>
+                    Explore {name}
+                    <span aria-hidden="true">+</span>
+                  </summary>
+                  <p>{detail}</p>
+                </details>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section id="how-to-join" className="world-join">
+        <div className="world-container world-join-inner">
+          <div>
+            <p className="world-kicker">05 / YOUR FIRST QUEST</p>
+            <h2>
+              SMALL STEP.
+              <br />
+              NEW <em>ADVENTURE.</em>
             </h2>
             <p>
-              A short application. A bit about you.
+              No account. No perfect CV. Just you, your interests,
               <br />
-              No account to create, no perfect CV expected.
+              and what you’d like to build next.
             </p>
-            <Link href="/register" className="editorial-button dark">
-              {closed ? 'Recruitment status' : 'Start your application'}{' '}
-              <span aria-hidden="true">↗</span>
-            </Link>
+            <WorldButton href="/register">CREATE YOUR PLAYER PROFILE</WorldButton>
           </div>
-          <ol className="joining-steps">
+          <ol>
             {[
-              [
-                'Introduce yourself',
-                'Tell us who you are, what interests you, and what you’d like to learn or contribute.',
-              ],
-              [
-                'Take your time',
-                'Your draft stays in this browser. You can come back to finish it before the closing date.',
-              ],
-              [
-                'We’ll be in touch',
-                'The recruitment team will review your application and contact you about the next steps.',
-              ],
-            ].map(([title, description], index) => (
+              ['Introduce yourself', 'A few details, your interests and your skills.'],
+              ['Tell your story', 'What brings you here, and what would you like to learn?'],
+              ['Send your application', 'Review your answers. Our team will take it from there.'],
+            ].map(([title, copy], i) => (
               <li key={title}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
+                <span>0{i + 1}</span>
                 <div>
                   <h3>{title}</h3>
-                  <p>{description}</p>
+                  <p>{copy}</p>
                 </div>
               </li>
             ))}
           </ol>
         </div>
       </section>
-
-      <section className="questions-section editorial-container" id="faq">
+      <section className="world-faq world-container" id="faq">
         <div>
-          <p className="section-label">BEFORE YOU APPLY</p>
+          <p className="world-kicker">BEFORE YOU STEP INSIDE</p>
           <h2>
-            A few things
-            <br />
-            worth knowing.
+            A FEW <em>ANSWERS.</em>
           </h2>
         </div>
-        <div className="questions-list">
+        <div>
           {[
             [
               'Do I need to know how to code?',
-              'No. There are many ways to contribute: design, communication, organisation, partnerships, software, and data. A willingness to learn matters more than a specific starting point.',
+              'No. Design, communication, organisation, partnerships, software and data all have a place at DSC. Curiosity and a willingness to learn matter.',
             ],
             [
-              'Do I need to choose a department?',
-              'No. If a department interests you, you can mention it in the form. That preference is optional and not a final placement. The club team will discuss the right fit with you.',
+              'Are my department preferences final?',
+              'No. You can rank up to three interests, without duplicates. These are preferences, not a confirmed placement. The team will discuss the right fit with you.',
             ],
             [
               'Can I finish my application later?',
-              'Yes. Your draft is saved in this browser on this device. Return here to finish it before the deadline.',
+              'Yes. Your draft stays in this browser on this device. Avoid shared devices for personal information, and submit before recruitment closes.',
             ],
-            [
-              'When do applications close?',
-              `This round closes on ${recruitmentDeadlineLabel}. Your application must be submitted before that time.`,
-            ],
-          ].map(([question, answer]) => (
-            <details key={question}>
+            ['When do applications close?', `This round closes on ${recruitmentDeadlineLabel}.`],
+          ].map(([q, a]) => (
+            <details key={q}>
               <summary>
-                {question}
+                {q}
                 <span aria-hidden="true">+</span>
               </summary>
-              <p>{answer}</p>
+              <p>{a}</p>
             </details>
           ))}
         </div>
       </section>
-      <footer className="editorial-footer">
-        <div className="editorial-container">
-          <div className="footer-invitation">
-            <h2>{closed ? 'Until the next chapter.' : 'See you on the other side.'}</h2>
-            <Link href="/register" className="editorial-button">
-              {closed ? 'Recruitment status' : 'Join Data Science Club'}{' '}
-              <span aria-hidden="true">↗</span>
-            </Link>
+      <footer className="world-footer">
+        <div className="world-container">
+          <div className="footer-title">
+            <h2>
+              YOUR WORLD.
+              <br />
+              <em>OUR NEXT CHAPTER.</em>
+            </h2>
+            <WorldButton href="/register">JOIN THE WORLD</WorldButton>
           </div>
-          <div className="editorial-footer-bottom">
-            <Link href="/" className="cinematic-brand">
-              <img
-                src="/dsc-logo.svg"
-                width="36"
-                height="36"
-                alt="Data Science Club official logo"
-              />
-              <span>
-                Data Science Club<small>USTHB · ALGIERS</small>
-              </span>
-            </Link>
-            <span>© {new Date().getFullYear()} Data Science Club</span>
+          <div className="world-footer-bottom">
+            <WorldBrand />
+            <span>© 2026 Data Science Club · USTHB</span>
+            <Link href="/privacy">Application privacy</Link>
             <Link href="/admin">Admin access ↗</Link>
           </div>
         </div>
