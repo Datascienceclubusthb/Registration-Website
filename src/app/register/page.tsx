@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import {useState, useEffect, useRef, type FormEvent} from 'react';
-import {departments, type DepartmentId} from '@/config/site';
+import {departments, siteConfig, type DepartmentId} from '@/config/site';
 import {restoreDepartmentPreference} from '@/lib/department-preference';
 import {useRecruitment} from '@/hooks/use-recruitment';
 import {recruitmentDeadlineLabel} from '@/lib/recruitment';
@@ -114,7 +114,11 @@ export default function RegisterPage() {
         setDraft(restored);
       }
       const oldKey = localStorage.getItem('dsc-application-key');
-      key.current = oldKey && /^[0-9a-f-]{36}$/i.test(oldKey) ? oldKey : crypto.randomUUID();
+      key.current =
+        oldKey &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(oldKey)
+          ? oldKey
+          : crypto.randomUUID();
       localStorage.setItem('dsc-application-key', key.current);
     } catch {
       key.current = crypto.randomUUID();
@@ -323,10 +327,10 @@ export default function RegisterPage() {
             )}
             <div className="world-actions">
               <WorldButton href="/">BACK TO HOME</WorldButton>
-              {success && process.env.NEXT_PUBLIC_DSC_INSTAGRAM_URL && (
+              {success && siteConfig.instagram && (
                 <a
                   className="world-text-link"
-                  href={process.env.NEXT_PUBLIC_DSC_INSTAGRAM_URL}
+                  href={siteConfig.instagram}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -416,7 +420,7 @@ export default function RegisterPage() {
           )}
           <form onSubmit={submit} noValidate>
             <fieldset disabled={sending || !ready} className="application-fieldset">
-              <div className="application-step-heading">
+              <div className="application-step-heading" key={step}>
                 <p className="world-kicker">
                   {step === 4
                     ? 'FINAL CHECKPOINT'
@@ -507,12 +511,40 @@ export default function RegisterPage() {
                             ))}
                           </select>
                         </label>
+                        {draft.choices[i] && (
+                          <div className="preference-order">
+                            <button
+                              type="button"
+                              aria-label={`Move preference ${i + 1} up`}
+                              disabled={i === 0}
+                              onClick={() => {
+                                const choices = [...draft.choices];
+                                [choices[i - 1], choices[i]] = [choices[i], choices[i - 1]];
+                                update('choices', choices);
+                              }}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Move preference ${i + 1} down`}
+                              disabled={i === draft.choices.length - 1}
+                              onClick={() => {
+                                const choices = [...draft.choices];
+                                [choices[i + 1], choices[i]] = [choices[i], choices[i + 1]];
+                                update('choices', choices);
+                              }}
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                   <p className="world-note">
-                    Priority 01 is your first interest. To change the order, clear a preference and
-                    choose again. No duplicates, and no final assignment.
+                    Priority 01 is your first interest. Use the arrows to change the order. No
+                    duplicates, and no final assignment.
                   </p>
                 </div>
               )}

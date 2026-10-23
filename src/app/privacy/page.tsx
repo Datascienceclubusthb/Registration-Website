@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {siteConfig} from '@/config/site';
 import {WorldBrand} from '@/components/world-ui';
 export default function Privacy() {
   return (
@@ -39,9 +40,12 @@ export default function Privacy() {
         </p>
         <h2>Questions, corrections or deletion requests</h2>
         <p>
-          Contact the DSC recruitment team through the club’s official channels or in person at
-          USTHB. Include your application reference when available. Do not send passwords or
-          sensitive identity documents with your application.
+          Contact the DSC recruitment team through{' '}
+          <a href={siteConfig.instagram} target="_blank" rel="noreferrer" className="underline">
+            the club’s Instagram account
+          </a>{' '}
+          or in person at USTHB. Include your application reference when available. Do not send
+          passwords or sensitive identity documents with your application.
         </p>
         <h2>Your choice</h2>
         <p>

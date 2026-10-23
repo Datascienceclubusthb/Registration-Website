@@ -12,7 +12,8 @@ export function VoxelIsland({
 }) {
   return (
     <div
-      role="img"
+      role={label ? 'img' : undefined}
+      aria-hidden={!label || undefined}
       aria-label={label}
       className={`voxel-island ${className}`}
       style={

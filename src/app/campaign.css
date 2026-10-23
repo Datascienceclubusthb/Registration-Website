@@ -185,7 +185,7 @@ body {
   width: 115%;
   max-width: none;
   margin-left: -7%;
-  mix-blend-mode: multiply;
+  mix-blend-mode: darken;
 }
 .world-art-label {
   font-size: 9px;
@@ -278,7 +278,7 @@ body {
   background-image: url('/world/islands.webp');
   background-size: 300% 300%;
   background-position: var(--island-x) var(--island-y);
-  mix-blend-mode: multiply;
+  mix-blend-mode: darken;
   width: 100%;
 }
 .world-about {
@@ -1272,9 +1272,6 @@ body {
     font-size: 35px;
     margin: 12px 0;
   }
-  .application-sidebar h2 br {
-    display: none;
-  }
   .application-closes {
     border: 0;
     padding: 0;
@@ -1336,5 +1333,69 @@ body {
   }
   .privacy-notice {
     padding-block: 35px 55px;
+  }
+}
+
+.preference-order {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.preference-order button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--world-line);
+  background: transparent;
+  font-size: 18px;
+}
+.preference-order button:hover:enabled {
+  background: var(--world-soft);
+}
+.application-step-heading {
+  animation: world-step-in 0.2s ease-out;
+}
+.world-confirmation > .voxel-island {
+  animation: world-step-in 0.4s ease-out;
+}
+@keyframes world-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .application-step-heading,
+  .world-confirmation > .voxel-island {
+    animation: none;
+  }
+}
+@media (max-width: 450px) {
+  .ranked-preference {
+    gap: 8px;
+  }
+  .ranked-preference > .voxel-island,
+  .preference-empty {
+    width: 48px;
+  }
+  .preference-empty {
+    height: 48px;
+  }
+  .preference-order button {
+    width: 32px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 760px) {
+  .application-world .inventory-field,
+  .application-world .ranked-preference select {
+    font-size: 16px !important;
+  }
+  .ranked-preference select {
+    max-width: 100%;
   }
 }

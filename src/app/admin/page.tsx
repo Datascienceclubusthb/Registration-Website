@@ -1,32 +1,567 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { departments } from '@/config/site';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {departments} from '@/config/site';
+import {recruitmentDeadlineLabel} from '@/lib/recruitment';
 
-type Application={_id:string;name:string;email:string;phone?:string;university?:string;major?:string;year?:string;choices?:string[];skills?:string[];interests?:string;why?:string;contribute?:string;portfolio?:string;status?:string;adminNote?:string;createdAt?:string;answers?:Record<string,string>};
-type Data={submissions:Application[];total:number;statuses:Record<string,number>;years:Record<string,number>;divisions:Record<string,number>};
-const statusLabels:Record<string,string>={new:'New',under_review:'Under Review',interview:'Interview',accepted:'Accepted',rejected:'Rejected'};
-const emptyData:Data={submissions:[],total:0,statuses:{},years:{},divisions:{}};
+type Application = {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  university?: string;
+  major?: string;
+  year?: string;
+  choices?: string[];
+  skills?: string[];
+  interests?: string;
+  why?: string;
+  contribute?: string;
+  portfolio?: string;
+  status?: string;
+  adminNote?: string;
+  createdAt?: string;
+  experience?: string;
+  learn?: string;
+  idea?: string;
+  consentAt?: string;
+  privacyVersion?: string;
+  answers?: Record<string, string>;
+};
+type Data = {
+  submissions: Application[];
+  total: number;
+  statuses: Record<string, number>;
+  years: Record<string, number>;
+  divisions: Record<string, number>;
+};
+const statusLabels: Record<string, string> = {
+  new: 'New',
+  under_review: 'Under Review',
+  interview: 'Interview',
+  accepted: 'Accepted',
+  rejected: 'Rejected',
+};
+const emptyData: Data = {submissions: [], total: 0, statuses: {}, years: {}, divisions: {}};
 
-export default function AdminPage(){
-  const [authenticated,setAuthenticated]=useState(false);const [checking,setChecking]=useState(true);const [setupError,setSetupError]=useState('');const [email,setEmail]=useState('');const [password,setPassword]=useState('');const [loginError,setLoginError]=useState('');const [data,setData]=useState<Data>(emptyData);const [loading,setLoading]=useState(false);const [statusFilter,setStatusFilter]=useState('');const [yearFilter,setYearFilter]=useState('');const [divisionFilter,setDivisionFilter]=useState('');const [search,setSearch]=useState('');const [selected,setSelected]=useState<Application|null>(null);const [note,setNote]=useState('');const [flash,setFlash]=useState('');
-  const params=useMemo(()=>new URLSearchParams({...(statusFilter?{status:statusFilter}:{}),...(yearFilter?{year:yearFilter}:{}),...(divisionFilter?{division:divisionFilter}:{}),...(search?{search}:{})}).toString(),[statusFilter,yearFilter,divisionFilter,search]);
-  const load=useCallback(async()=>{setLoading(true);try{const response=await fetch(`/api/admin/submissions?${params}`,{cache:'no-store'});const result=await response.json();if(response.status===401){setAuthenticated(false);return}if(!response.ok)throw new Error(result.error||'Could not load applications.');setData(result);setSetupError('')}catch(error){setSetupError(error instanceof Error?error.message:'Could not load applications.')}finally{setLoading(false);setChecking(false)}},[params]);
-  useEffect(()=>{let active=true;fetch('/api/admin/submissions').then(async response=>{if(response.status===401){if(active)setChecking(false);return}const result=await response.json();if(!response.ok)throw new Error(result.error||'Admin setup error');if(active){setAuthenticated(true);setData(result);setChecking(false)}}).catch(error=>{if(active){setSetupError(error instanceof Error?error.message:'Admin setup error');setChecking(false)}});return()=>{active=false}},[]);
-  useEffect(()=>{if(authenticated)void load()},[authenticated,load]);
-  async function login(event:React.FormEvent){event.preventDefault();setLoginError('');const response=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const result=await response.json();if(!response.ok){setLoginError(result.error||'Could not sign in.');return}setAuthenticated(true);setPassword('');void load()}
-  async function logout(){await fetch('/api/admin/logout',{method:'POST'});setAuthenticated(false);setSelected(null)}
-  function openApp(app:Application){setSelected(app);setNote(app.adminNote||'')}
-  async function updateApplication(fields:{status?:string;adminNote?:string}){if(!selected)return;const response=await fetch(`/api/admin/submissions/${selected._id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)});const result=await response.json();if(!response.ok){setFlash(result.error||'Update failed');return}setSelected(result.submission);setNote(result.submission.adminNote||'');setFlash('Application updated.');void load()}
-  function exportCsv(){const columns=['Name','Email','Phone','University','Major','Year','Department interest (non-binding)','Skills','Status','Submitted','Why DSC','Contribution','Portfolio','Admin notes'];const rows=data.submissions.map(a=>[a.name,a.email,a.phone,a.university,a.major,a.year,(a.choices||[]).map(id=>departments.find(d=>d.id===id)?.name||id).join(' / '),(a.skills||[]).join(' / '),statusLabels[a.status||'new']||a.status,a.createdAt?new Date(a.createdAt).toISOString():'',a.why,a.contribute,a.portfolio,a.adminNote]);const quote=(v:unknown)=>`"${String(v??'').replaceAll('"','""')}"`;const csv=[columns,...rows].map(row=>row.map(quote).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([`\ufeff${csv}`],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='dsc-applications.csv';a.click();URL.revokeObjectURL(url)}
-  if(checking)return <main className="admin-screen"><p className="eyebrow">CHECKING ADMIN SESSION…</p></main>;
-  if(!authenticated)return <main className="admin-screen"><Link href="/" className="game-back">← BACK TO MAIN MENU</Link><form className="admin-login" onSubmit={login}><span className="eyebrow">DSC SERVER CONSOLE</span><h1>ADMIN SIGN IN</h1><p className="form-note">Authorized club administrators only.</p>{setupError&&<p className="admin-error">{setupError}</p>}<label>ADMIN EMAIL<input className="inventory-field" type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} /></label><label>PASSWORD<input className="inventory-field" type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} /></label>{loginError&&<p className="admin-error" role="alert">{loginError}</p>}<button className="admin-action" type="submit">ENTER ADMIN WORLD</button></form></main>;
-  return <main className="admin-screen"><div className="admin-shell"><header className="admin-head"><div><span className="eyebrow">DSC RECRUITMENT • ADMIN MODE</span><h1>APPLICATIONS CONSOLE</h1></div><div className="flex gap-2"><button className="admin-action" onClick={()=>void load()}>↻ REFRESH</button><button className="admin-action" onClick={exportCsv}>↓ EXPORT CSV</button><button className="admin-action danger" onClick={()=>void logout()}>SIGN OUT</button></div></header>
-  {setupError&&<p className="admin-error" role="alert">{setupError}</p>}{flash&&<p className="form-note" role="status">{flash}</p>}
-  <div className="admin-summary"><div className="admin-stat"><span>TOTAL APPLICATIONS</span><b>{data.total}</b></div><div className="admin-stat"><span>NEW</span><b>{data.statuses.new||0}</b></div><div className="admin-stat"><span>UNDER REVIEW</span><b>{data.statuses.under_review||0}</b></div><div className="admin-stat"><span>INTERVIEWS</span><b>{data.statuses.interview||0}</b></div></div>
-  <div className="admin-toolbar"><input className="inventory-field" aria-label="Search applicants" placeholder="Search name, email, major…" value={search} onChange={e=>setSearch(e.target.value)} /><select className="inventory-field" aria-label="Filter by status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="">All statuses</option>{Object.entries(statusLabels).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><select className="inventory-field" aria-label="Filter by department interest" value={divisionFilter} onChange={e=>setDivisionFilter(e.target.value)}><option value="">All department interests</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select><select className="inventory-field" aria-label="Filter by year" value={yearFilter} onChange={e=>setYearFilter(e.target.value)}><option value="">All years</option>{Object.keys(data.years).sort().map(year=><option key={year}>{year}</option>)}</select></div>
-  <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>APPLICANT</th><th>YEAR / MAJOR</th><th>INTEREST (NON-BINDING)</th><th>SUBMITTED</th><th>STATUS</th></tr></thead><tbody>{loading?<tr><td colSpan={5}>Loading applications…</td></tr>:data.submissions.length?data.submissions.map(app=><tr key={app._id} className="applicant-row" onClick={()=>openApp(app)}><td><b>{app.name}</b><br/><span className="form-note">{app.email}</span></td><td>{app.year||'—'}<br/><span className="form-note">{app.major||'—'}</span></td><td>{departments.find(d=>d.id===app.choices?.[0])?.name||'—'}</td><td>{app.createdAt?new Date(app.createdAt).toLocaleDateString():'—'}</td><td><span className={`status-pill ${app.status||'new'}`}>{statusLabels[app.status||'new']||app.status}</span></td></tr>):<tr><td colSpan={5}>No applications match these filters.</td></tr>}</tbody></table></div><p className="form-note">Showing {data.submissions.length} filtered records. CSV export uses the current result set (up to 500 records).</p>
-  {selected&&<section className="admin-detail"><div className="admin-head"><div><span className="eyebrow">APPLICANT PROFILE</span><h2>{selected.name}</h2><span className="form-note">{selected.email} · {selected.phone||'No phone provided'}</span></div><button className="admin-action" onClick={()=>setSelected(null)}>CLOSE ✕</button></div><div className="admin-detail-grid"><div><b>EDUCATION</b><p>{selected.university||'—'}<br/>{selected.major||'—'} · {selected.year||'—'}</p><b>DEPARTMENT INTEREST (NON-BINDING)</b><p>{(selected.choices||[]).map((id,i)=>`${i+1}. ${departments.find(d=>d.id===id)?.name||id}`).join('\n')||'—'}</p><b>INVENTORY</b><p>{selected.skills?.join(' · ')||'Not specified'}{selected.interests?`\nCurious about: ${selected.interests}`:''}</p></div><div><b>QUEST: WHY DSC?</b><p>{selected.why||selected.answers?.note||'—'}</p><b>CONTRIBUTION / LEARNING GOALS</b><p>{selected.contribute||'—'}</p>{selected.portfolio&&<><b>PORTFOLIO</b><p><a href={selected.portfolio} target="_blank" rel="noreferrer">{selected.portfolio}</a></p></>}</div></div><div className="admin-toolbar"><label className="form-note">REVIEW STATUS<select className="inventory-field" value={selected.status||'new'} onChange={e=>void updateApplication({status:e.target.value})}>{Object.entries(statusLabels).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label></div><label className="form-note">INTERNAL ADMIN NOTES<textarea className="inventory-field" rows={4} value={note} maxLength={4000} onChange={e=>setNote(e.target.value)} placeholder="Private notes for the review team"/></label><button className="admin-action mt-2" onClick={()=>void updateApplication({adminNote:note})}>SAVE INTERNAL NOTE</button></section>}
-  </div></main>
+export default function AdminPage() {
+  const [recruitment, setRecruitment] = useState<{
+    enabled: boolean;
+    expired: boolean;
+    open: boolean;
+  } | null>(null);
+  const [savingRecruitment, setSavingRecruitment] = useState(false);
+  async function toggleRecruitment() {
+    if (!recruitment || savingRecruitment) return;
+    setSavingRecruitment(true);
+    try {
+      const response = await fetch('/api/admin/recruitment', {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({enabled: !recruitment.enabled}),
+      });
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error || 'Update failed.');
+      setRecruitment(result);
+      setFlash(result.open ? 'Recruitment is open.' : 'Recruitment is closed.');
+    } catch (e) {
+      setFlash(e instanceof Error ? e.message : 'Could not update recruitment.');
+    } finally {
+      setSavingRecruitment(false);
+    }
+  }
+  const [authenticated, setAuthenticated] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [setupError, setSetupError] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [data, setData] = useState<Data>(emptyData);
+  const [loading, setLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
+  const [divisionFilter, setDivisionFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Application | null>(null);
+  const [note, setNote] = useState('');
+  const [flash, setFlash] = useState('');
+  const params = useMemo(
+    () =>
+      new URLSearchParams({
+        ...(statusFilter ? {status: statusFilter} : {}),
+        ...(yearFilter ? {year: yearFilter} : {}),
+        ...(divisionFilter ? {division: divisionFilter} : {}),
+        ...(search ? {search} : {}),
+      }).toString(),
+    [statusFilter, yearFilter, divisionFilter, search]
+  );
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/admin/submissions?${params}`, {cache: 'no-store'});
+      const result = await response.json();
+      if (response.status === 401) {
+        setAuthenticated(false);
+        return;
+      }
+      if (!response.ok) throw new Error(result.error || 'Could not load applications.');
+      setData(result);
+      const statusResponse = await fetch('/api/recruitment', {cache: 'no-store'});
+      if (statusResponse.ok) setRecruitment(await statusResponse.json());
+      else setFlash('Could not load recruitment status. Refresh to retry.');
+      setSetupError('');
+    } catch (error) {
+      setSetupError(error instanceof Error ? error.message : 'Could not load applications.');
+    } finally {
+      setLoading(false);
+      setChecking(false);
+    }
+  }, [params]);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/admin/submissions')
+      .then(async (response) => {
+        if (response.status === 401) {
+          if (active) setChecking(false);
+          return;
+        }
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Admin setup error');
+        if (active) {
+          setAuthenticated(true);
+          setData(result);
+          setChecking(false);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setSetupError(error instanceof Error ? error.message : 'Admin setup error');
+          setChecking(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (authenticated) void load();
+  }, [authenticated, load]);
+  async function login(event: React.FormEvent) {
+    event.preventDefault();
+    setLoginError('');
+    const response = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email, password}),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      setLoginError(result.error || 'Could not sign in.');
+      return;
+    }
+    setAuthenticated(true);
+    setPassword('');
+    void load();
+  }
+  async function logout() {
+    await fetch('/api/admin/logout', {method: 'POST'});
+    setAuthenticated(false);
+    setSelected(null);
+  }
+  function openApp(app: Application) {
+    setSelected(app);
+    setNote(app.adminNote || '');
+  }
+  async function updateApplication(fields: {status?: string; adminNote?: string}) {
+    if (!selected) return;
+    const response = await fetch(`/api/admin/submissions/${selected._id}`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(fields),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      setFlash(result.error || 'Update failed');
+      return;
+    }
+    setSelected(result.submission);
+    setNote(result.submission.adminNote || '');
+    setFlash('Application updated.');
+    void load();
+  }
+  function exportCsv() {
+    const columns = [
+      'Name',
+      'Email',
+      'Phone',
+      'University',
+      'Major',
+      'Year',
+      'Ranked preferences (non-binding)',
+      'Skills',
+      'Status',
+      'Submitted',
+      'Why DSC',
+      'Contribution',
+      'Portfolio',
+      'Experience',
+      'Learning goals',
+      'Project idea',
+      'Consent recorded',
+      'Privacy notice version',
+      'Admin notes',
+    ];
+    const rows = data.submissions.map((a) => [
+      a.name,
+      a.email,
+      a.phone,
+      a.university,
+      a.major,
+      a.year,
+      (a.choices || []).map((id) => departments.find((d) => d.id === id)?.name || id).join(' / '),
+      (a.skills || []).join(' / '),
+      statusLabels[a.status || 'new'] || a.status,
+      a.createdAt ? new Date(a.createdAt).toISOString() : '',
+      a.why,
+      a.contribute,
+      a.portfolio,
+      a.experience,
+      a.learn,
+      a.idea,
+      a.consentAt,
+      a.privacyVersion,
+      a.adminNote,
+    ]);
+    const quote = (v: unknown) =>
+      `"${String(v ?? '')
+        .replace(/^[=+@\-\t\r]/, (m) => "'" + m)
+        .replaceAll('"', '""')}"`;
+    const csv = [columns, ...rows].map((row) => row.map(quote).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], {type: 'text/csv;charset=utf-8'}));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dsc-applications.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  if (checking)
+    return (
+      <main className="admin-screen">
+        <p className="eyebrow">CHECKING ADMIN SESSION…</p>
+      </main>
+    );
+  if (!authenticated)
+    return (
+      <main className="admin-screen">
+        <Link href="/" className="game-back">
+          ← BACK TO MAIN MENU
+        </Link>
+        <form className="admin-login" onSubmit={login}>
+          <span className="eyebrow">DSC RECRUITMENT</span>
+          <h1>ADMIN SIGN IN</h1>
+          <p className="form-note">Authorized club administrators only.</p>
+          {setupError && <p className="admin-error">{setupError}</p>}
+          <label>
+            ADMIN EMAIL
+            <input
+              className="inventory-field"
+              type="email"
+              required
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+          <label>
+            PASSWORD
+            <input
+              className="inventory-field"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          {loginError && (
+            <p className="admin-error" role="alert">
+              {loginError}
+            </p>
+          )}
+          <button className="admin-action" type="submit">
+            SIGN IN
+          </button>
+        </form>
+      </main>
+    );
+  return (
+    <main className="admin-screen">
+      <div className="admin-shell">
+        <header className="admin-head">
+          <div>
+            <span className="eyebrow">DSC RECRUITMENT • ADMIN MODE</span>
+            <h1>APPLICATIONS</h1>
+          </div>
+          <div className="flex gap-2">
+            <button className="admin-action" onClick={() => void load()}>
+              ↻ REFRESH
+            </button>
+            <button className="admin-action" onClick={exportCsv}>
+              ↓ EXPORT CSV
+            </button>
+            <button className="admin-action danger" onClick={() => void logout()}>
+              SIGN OUT
+            </button>
+          </div>
+        </header>
+        {setupError && (
+          <p className="admin-error" role="alert">
+            {setupError}
+          </p>
+        )}
+        {flash && (
+          <p className="form-note" role="status">
+            {flash}
+          </p>
+        )}
+        <section className="admin-recruitment">
+          <div>
+            <strong>
+              RECRUITMENT / {recruitment ? (recruitment.open ? 'OPEN' : 'CLOSED') : 'CHECKING…'}
+            </strong>
+            <p>Deadline: {recruitmentDeadlineLabel}. The deadline always takes priority.</p>
+          </div>
+          <button
+            type="button"
+            className="admin-action"
+            disabled={!recruitment || savingRecruitment || recruitment.expired}
+            onClick={() => void toggleRecruitment()}
+          >
+            {savingRecruitment
+              ? 'Saving…'
+              : recruitment?.enabled
+                ? 'Pause applications'
+                : 'Open applications'}
+          </button>
+        </section>
+        <div className="admin-summary">
+          <div className="admin-stat">
+            <span>TOTAL APPLICATIONS</span>
+            <b>{data.total}</b>
+          </div>
+          <div className="admin-stat">
+            <span>NEW</span>
+            <b>{data.statuses.new || 0}</b>
+          </div>
+          <div className="admin-stat">
+            <span>UNDER REVIEW</span>
+            <b>{data.statuses.under_review || 0}</b>
+          </div>
+          <div className="admin-stat">
+            <span>INTERVIEWS</span>
+            <b>{data.statuses.interview || 0}</b>
+          </div>
+        </div>
+        <div className="admin-toolbar">
+          <input
+            className="inventory-field"
+            aria-label="Search applicants"
+            placeholder="Search name, email, major…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="inventory-field"
+            aria-label="Filter by status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All statuses</option>
+            {Object.entries(statusLabels).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <select
+            className="inventory-field"
+            aria-label="Filter by department interest"
+            value={divisionFilter}
+            onChange={(e) => setDivisionFilter(e.target.value)}
+          >
+            <option value="">All department interests</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="inventory-field"
+            aria-label="Filter by year"
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+          >
+            <option value="">All years</option>
+            {Object.keys(data.years)
+              .sort()
+              .map((year) => (
+                <option key={year}>{year}</option>
+              ))}
+          </select>
+        </div>
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>APPLICANT</th>
+                <th>YEAR / MAJOR</th>
+                <th>FIRST PREFERENCE</th>
+                <th>SUBMITTED</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5}>Loading applications…</td>
+                </tr>
+              ) : data.submissions.length ? (
+                data.submissions.map((app) => (
+                  <tr key={app._id} className="applicant-row" onClick={() => openApp(app)}>
+                    <td>
+                      <button type="button" className="applicant-name" onClick={() => openApp(app)}>
+                        {app.name}
+                      </button>
+                      <br />
+                      <span className="form-note">{app.email}</span>
+                    </td>
+                    <td>
+                      {app.year || '—'}
+                      <br />
+                      <span className="form-note">{app.major || '—'}</span>
+                    </td>
+                    <td>{departments.find((d) => d.id === app.choices?.[0])?.name || '—'}</td>
+                    <td>{app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '—'}</td>
+                    <td>
+                      <span className={`status-pill ${app.status || 'new'}`}>
+                        {statusLabels[app.status || 'new'] || app.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5}>No applications match these filters.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <p className="form-note">
+          Showing {data.submissions.length} filtered records. CSV export uses the current result set
+          (up to 500 records).
+        </p>
+        {selected && (
+          <section className="admin-detail">
+            <div className="admin-head">
+              <div>
+                <span className="eyebrow">APPLICANT PROFILE</span>
+                <h2>{selected.name}</h2>
+                <span className="form-note">
+                  {selected.email} · {selected.phone || 'No phone provided'}
+                </span>
+              </div>
+              <button className="admin-action" onClick={() => setSelected(null)}>
+                CLOSE ✕
+              </button>
+            </div>
+            <div className="admin-detail-grid">
+              <div>
+                <b>EDUCATION</b>
+                <p>
+                  {selected.university || '—'}
+                  <br />
+                  {selected.major || '—'} · {selected.year || '—'}
+                </p>
+                <b>DEPARTMENT FIRST PREFERENCE</b>
+                <p>
+                  {(selected.choices || [])
+                    .map((id, i) => `${i + 1}. ${departments.find((d) => d.id === id)?.name || id}`)
+                    .join('\n') || '—'}
+                </p>
+                <b>SKILLS & INTERESTS</b>
+                <p>
+                  {selected.skills?.join(' · ') || 'Not specified'}
+                  {selected.interests ? `\nCurious about: ${selected.interests}` : ''}
+                </p>
+              </div>
+              <div>
+                <b>WHY DSC?</b>
+                <p>{selected.why || selected.answers?.note || '—'}</p>
+                <b>CONTRIBUTION</b>
+                <p>{selected.contribute || '—'}</p>
+                <b>EXPERIENCE</b>
+                <p>{selected.experience || 'Not provided'}</p>
+                <b>LEARNING GOALS</b>
+                <p>{selected.learn || 'Not provided'}</p>
+                <b>PROJECT IDEA</b>
+                <p>{selected.idea || 'Not provided'}</p>
+                <b>CONSENT</b>
+                <p>
+                  {selected.consentAt
+                    ? `${new Date(selected.consentAt).toLocaleString()} · Notice ${selected.privacyVersion || '—'}`
+                    : 'Historical application — consent timestamp not recorded'}
+                </p>
+                {selected.portfolio && (
+                  <>
+                    <b>PORTFOLIO</b>
+                    <p>
+                      <a href={selected.portfolio} target="_blank" rel="noreferrer">
+                        {selected.portfolio}
+                      </a>
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="admin-toolbar">
+              <label className="form-note">
+                REVIEW STATUS
+                <select
+                  className="inventory-field"
+                  value={selected.status || 'new'}
+                  onChange={(e) => void updateApplication({status: e.target.value})}
+                >
+                  {Object.entries(statusLabels).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label className="form-note">
+              INTERNAL ADMIN NOTES
+              <textarea
+                className="inventory-field"
+                rows={4}
+                value={note}
+                maxLength={4000}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Private notes for the review team"
+              />
+            </label>
+            <button
+              className="admin-action mt-2"
+              onClick={() => void updateApplication({adminNote: note})}
+            >
+              SAVE INTERNAL NOTE
+            </button>
+          </section>
+        )}
+      </div>
+    </main>
+  );
 }
