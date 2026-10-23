@@ -124,6 +124,8 @@ export async function POST(request: Request) {
     if (!recruitment.open)
       return NextResponse.json({error: 'Recruitment is currently closed.'}, {status: 403});
     await dbConnect();
+    // Wait for the unique retry-key index before accepting concurrent submissions.
+    await Submission.init();
     const existing = await Submission.findOne({applicationKey})
       .select('_id')
       .lean<{_id: unknown} | null>();

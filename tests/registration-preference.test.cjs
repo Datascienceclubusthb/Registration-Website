@@ -74,6 +74,7 @@ const valid = {
 function createRoute({expired = false, paused = false, unavailable = false} = {}) {
   const saved = [];
   const model = {
+    init: async () => {},
     create: async (value) => {
       const entry = {...value, _id: 'test-reference-' + saved.length};
       saved.push(entry);
